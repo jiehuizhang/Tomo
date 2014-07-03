@@ -4,6 +4,7 @@ import numpy as np
 
 import ImageIO
 import TImage
+import TPatch
 import ShapeIndex
 import histEqualization
 import AT_denoising
@@ -12,19 +13,20 @@ import tiffLib
 import gabor_filter
 import Response_Analysis as ra
 import bsckground_Substraction as bs
+import feat_Extraction as fex
 
 def main():
 
-    '''############################## single smv convert#######################
-    dataPath = '/home/TomosynthesisData/Cancer_25_cases/5039/'
+    ############################## single smv convert#######################
+    '''dataPath = '/home/TomosynthesisData/Cancer_25_cases/5039/'
     outputPath = '/home/yanbin/Tomosynthesis/processed/5039/'
     fileName = '5039.recon08.smv'
     im = ImageIO.imReader(dataPath,fileName, 'smv')
-    ImageIO.imWriter(outputPath,'5039.tif',im,3)
+    ImageIO.imWriter(outputPath,'5039.tif',im,3)'''
 
     ################## single tiff slice preprocessing ########################
-    dataPath = '/home/yanbin/Tomosynthesis/test/'
-    fileName = 'test.tif'
+    '''dataPath = 'C:/Tomosynthesis/localtest/'
+    fileName = 'test-crop.tif'
     im = ImageIO.imReader(dataPath,fileName, 'tif',2)
 
     ## Equalization
@@ -78,13 +80,13 @@ def main():
         print i
         for j in range(len(filter_bank[i])):
             tiffLib.imsave(outputPath + str(i)+'_'+ str(j)+'_' + 'kernels.tif',np.float32(filter_bank[i][j]))
-            tiffLib.imsave(outputPath + str(i)+'_'+ str(j)+'_' + 'response.tif',np.float32(responses[i][j]))
-    '''
+            tiffLib.imsave(outputPath + str(i)+'_'+ str(j)+'_' + 'response.tif',np.float32(responses[i][j]))'''
+    
 
     ## Gabor kernel response analysis test
-    dataPath = 'C:/Tomosynthesis/data/2D_tiffs/5227/'
-    outputPath = 'C:/Tomosynthesis/localtest/5227/'
-    fileName = '5227-recon08_26.tif'
+    dataPath = 'C:/Tomosynthesis/localtest/'
+    outputPath = 'C:/Tomosynthesis/localtest/res/'
+    fileName = 'test-crop.tif'
     im = ImageIO.imReader(dataPath,fileName, 'tif',2)
 
     params = []
@@ -105,21 +107,29 @@ def main():
     #params.append([4, 20, 0.01,1])
     #params.append([4, 20, 0.0175,1])
     #params.append([4, 20, 0.0175,1])
+    
     for k in range(len(params)):
         print k
+        sampRate = 30
+        winSize = 15
         kernels = gabor_filter.creat_Gabor_Kernels(params[k][0],params[k][1],params[k][2],params[k][3])
         response = gabor_filter.compute_Response(im.data[0],kernels)
-        (batchResp, integratedResp) = ra.cerat_batch_response(response,30,15)
+        (batchResp, integratedResp) = ra.cerat_batch_response(response,sampRate,winSize)
         poll = ra.vote(batchResp)
-        integrated_poll = ra.integrating_poll(poll,30,15,response[0].shape)
+        integrated_poll = ra.integrating_poll(poll,sampRate,winSize,response[0].shape)
         
         tiffLib.imsave(outputPath + str(k) + 'poll.tif',np.float32(poll))
         tiffLib.imsave(outputPath + str(k) + 'integrated_poll.tif',np.float32(integrated_poll))
         
-        for i in range(len(response)):                         
+        '''for i in range(len(response)):                         
             tiffLib.imsave(outputPath + str(k) + '_' + str(i) + 'kernels.tif',np.float32(kernels[i]))
             tiffLib.imsave(outputPath + str(k) + '_' + str(i) + 'response.tif',np.float32(response[i]))
             tiffLib.imsave(outputPath + str(k) + '_' + str(i) + 'batchResp.tif',np.float32(batchResp[i]))
-            tiffLib.imsave(outputPath + str(k) + '_' + str(i) + 'integratedResp.tif',np.float32(integratedResp[i]))
+            tiffLib.imsave(outputPath + str(k) + '_' + str(i) + 'integratedResp.tif',np.float32(integratedResp[i]))'''
+        patches = fex.patch_Extraction(im.data[0],poll,0,sampRate,90,7.5)
+        ring = patches[0].getRing(10,60)
+        
+        for i in range(len(patches)):
+            tiffLib.imsave(outputPath + str(i) + 'patches.tif',np.float32(patches[i].pdata))
 
 main()
