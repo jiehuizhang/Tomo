@@ -2,14 +2,16 @@
 # The Tomosynthesis Image Class
 #
 
+import numpy as np
 class TImage:
 
     dim = 0
     size_0 = 0
     size_1 = 0
-    size_2 = 0
+    size_2 = 1
     data_type = None
     data = []
+    sampled_data = []
  
     def __init__ (self, im = None):
         '''Initialization'''
@@ -40,6 +42,16 @@ class TImage:
 
     def getData(self):
         return self.data
+
+    def downSample(self, rate):
+
+        rows = np.array(range(0,self.size_0,rate))
+        cols = np.array(range(0,self.size_1,rate))
+    
+        for i in range(self.size_2):
+            rs = self.data[i][rows,:]
+            self.sampled_data.append(rs[:,cols])
+            
 
 
 

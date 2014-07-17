@@ -1,6 +1,8 @@
 import time
 
 import numpy as np
+import scipy.ndimage.filters as filters
+from pylab import *
 
 import ImageIO
 import TImage
@@ -14,6 +16,8 @@ import gabor_filter
 import Response_Analysis as ra
 import bsckground_Substraction as bs
 import feat_Extraction as fex
+import MC_Detection as mc
+import Creat_trainSam 
 
 def main():
 
@@ -84,7 +88,7 @@ def main():
     
 
     ## Gabor kernel response analysis test
-    dataPath = 'C:/Tomosynthesis/localtest/'
+    '''dataPath = 'C:/Tomosynthesis/localtest/'
     outputPath = 'C:/Tomosynthesis/localtest/res/'
     fileName = 'test-crop.tif'
     im = ImageIO.imReader(dataPath,fileName, 'tif',2)
@@ -109,7 +113,6 @@ def main():
     #params.append([4, 20, 0.0175,1])
     
     for k in range(len(params)):
-        print k
         sampRate = 30
         winSize = 15
         kernels = gabor_filter.creat_Gabor_Kernels(params[k][0],params[k][1],params[k][2],params[k][3])
@@ -121,15 +124,103 @@ def main():
         tiffLib.imsave(outputPath + str(k) + 'poll.tif',np.float32(poll))
         tiffLib.imsave(outputPath + str(k) + 'integrated_poll.tif',np.float32(integrated_poll))
         
-        '''for i in range(len(response)):                         
+        for i in range(len(response)):                         
             tiffLib.imsave(outputPath + str(k) + '_' + str(i) + 'kernels.tif',np.float32(kernels[i]))
             tiffLib.imsave(outputPath + str(k) + '_' + str(i) + 'response.tif',np.float32(response[i]))
             tiffLib.imsave(outputPath + str(k) + '_' + str(i) + 'batchResp.tif',np.float32(batchResp[i]))
-            tiffLib.imsave(outputPath + str(k) + '_' + str(i) + 'integratedResp.tif',np.float32(integratedResp[i]))'''
+            tiffLib.imsave(outputPath + str(k) + '_' + str(i) + 'integratedResp.tif',np.float32(integratedResp[i]))
         patches = fex.patch_Extraction(im.data[0],poll,0,sampRate,90,7.5)
-        ring = patches[0].getRing(10,60)
-        
+        patches_feats = np.zeros((1,10), dtype=np.double)
         for i in range(len(patches)):
-            tiffLib.imsave(outputPath + str(i) + 'patches.tif',np.float32(patches[i].pdata))
+            patches[i].getRings(numrings = 5)
+            patches[i].getMeanFeats()
+            patches[i].getVarFeats()
+            patches_feats = np.vstack((patches_feats,patches[i].dumpFeats()))
+            
+        np.savetxt(outputPath + 'patches_feats.txt', patches_feats, delimiter='\t')   
+        for i in range(len(patches)):
+            tiffLib.imsave(outputPath + str(i) + 'patches.tif',np.float32(patches[i].pdata))'''
+
+    
+    ############################ LOG test #############################
+    '''dataPath = 'C:/Tomosynthesis/data/2D_tiffs/5016/'
+    outputPath = 'C:/Tomosynthesis/localtest/res/'
+    fileName = '5016EMML08_17.tif'
+    #fileName = 'MC_1_5092Recon08_16-1.tif'
+    im = ImageIO.imReader(dataPath,fileName, 'tif',2)
+    
+    #response_original = np.zeros(im.data[0].shape, np.double)
+    #filters.gaussian_laplace(im.data[0], sigma=3, output=response_original, mode='reflect')
+    #tiffLib.imsave(outputPath + 'log_original.tif',np.float32(-response_original))  
+    
+    log = mc.log_filtering(im.data[0],winSize=40,sigma=3,fg_thresh = 0.6)
+    constrained_log = mc.laebl_connecte_comp(log,threshold=3.0,size_constrain = (2,80))
+    tiffLib.imsave(outputPath + 'log_constrained.tif',np.float32(constrained_log))
+    tiffLib.imsave(outputPath + 'log_tile.tif',np.float32(log))'''
+
+
+    ############################ Creat Training Sample #############################
+
+    '''dataPath = 'C:/Tomosynthesis/training/'
+    outputPath = 'C:/Tomosynthesis/localtest/res/'
+    patches_feats = Creat_trainSam.creatTrainigSam(dataPath,numrings = 5)
+    np.savetxt(outputPath + 'training_patches_feats.txt', patches_feats, delimiter='\t')'''
+
+    ############################ HOG test #############################
+
+    dataPath = 'C:/Tomosynthesis/localtest/'
+    outputPath = 'C:/Tomosynthesis/localtest/res/'
+    #fileName = 'test-crop-1.tif'
+    fileName = '5131R-recon08_45-1.tif'
+    im = ImageIO.imReader(dataPath,fileName, 'tif',2)
+
+    # downsampling
+    im.downSample(rate = 2)
+    
+    # histogram equalization
+    eqimg = histEqualization.histEqualization(im.sampled_data[0], 16)
+    
+    # smoothing
+    smoothimg = filters.gaussian_filter(eqimg, sigma = 2, order=0, output=None, mode='reflect', cval=0.0, truncate=4.0)
+    
+    patch = TPatch.TPatch()
+    patch.initialize(smoothimg)
+    patch.computeGradient()
+    patch.gradOrieNormalize(threshold = 1500)
+    patch.getGSectors(12)
+    patch.getNormPerc(norm_th = 135)
+    patch.getNormLevl()
+
+    # plot
+    t = range(patch.normal_percentage.shape[1])
+    s = patch.normal_percentage[0]
+    s2 = patch.normal_level[0]
+
+    figure(1)
+    subplot(211)
+    plot(t, s)
+    grid()
+    
+    subplot(212)
+    plot(t, s2)
+    title(fileName)
+    grid()
+    show()
+
+    # save 
+    f = open(outputPath + 'gsectors.txt', 'w')
+    for item in patch.gsectors:
+        f.write("%s\n" % item)
+    f.close()
+    #np.savetxt(outputPath + 'gsectors.txt', np.asarray(patch.gsectors), delimiter='\t')
+     
+    tiffLib.imsave(outputPath + fileName[0:11] + 'down_sampled.tif',np.float32(smoothimg))
+    tiffLib.imsave(outputPath + fileName[0:11] +'gradient_magnitude.tif',np.float32(patch.gmagnitude))
+    tiffLib.imsave(outputPath + fileName[0:11] +'gradient_orientation.tif',np.float32(patch.gorientation))
+    tiffLib.imsave(outputPath + fileName[0:11] +'gradient_orientation_normalized.tif',np.float32(patch.gnormorientation))
+    tiffLib.imsave(outputPath + fileName[0:11] +'gy.tif',np.float32(patch.gy))
+    tiffLib.imsave(outputPath + fileName[0:11] +'local_orientation.tif',np.float32(patch.location_ori))
+    tiffLib.imsave(outputPath + fileName[0:11] +'reflected_orientation.tif',np.float32(patch.greflorientation))
+
 
 main()
