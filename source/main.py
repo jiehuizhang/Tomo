@@ -1,4 +1,5 @@
 import time
+from multiprocessing import Pool
 
 import numpy as np
 import scipy.ndimage.filters as filters
@@ -17,16 +18,24 @@ import Response_Analysis as ra
 import bsckground_Substraction as bs
 import feat_Extraction as fex
 import MC_Detection as mc
-import Creat_trainSam 
+import Creat_trainSam
 
-def main():
+def f(x,y):
+    z = math.factorial(200)
+    return x*y
+
+def f_wrapper(args):
+    
+    return f(*args)
+
+if __name__ == '__main__':
 
     ############################## single smv convert#######################
-    '''dataPath = '/home/TomosynthesisData/Cancer_25_cases/5039/'
-    outputPath = '/home/yanbin/Tomosynthesis/processed/5039/'
-    fileName = '5039.recon08.smv'
+    '''dataPath = '/home/TomosynthesisData/Cancer_25_cases/5092/'
+    outputPath = '/home/yanbin/Tomosynthesis/data/5092/'
+    fileName = '5092Recon08.smv_AutoCrop.smv'
     im = ImageIO.imReader(dataPath,fileName, 'smv')
-    ImageIO.imWriter(outputPath,'5039.tif',im,3)'''
+    ImageIO.imWriter(outputPath,'5092.tif',im,3)'''
 
     ################## single tiff slice preprocessing ########################
     '''dataPath = 'C:/Tomosynthesis/localtest/'
@@ -143,31 +152,94 @@ def main():
 
     
     ############################ LOG test #############################
-    '''dataPath = 'C:/Tomosynthesis/data/2D_tiffs/5016/'
+    # 2d test
+    '''dataPath = 'C:/Tomosynthesis/localtest/'
     outputPath = 'C:/Tomosynthesis/localtest/res/'
-    fileName = '5016EMML08_17.tif'
-    #fileName = 'MC_1_5092Recon08_16-1.tif'
-    im = ImageIO.imReader(dataPath,fileName, 'tif',2)
-    
-    #response_original = np.zeros(im.data[0].shape, np.double)
-    #filters.gaussian_laplace(im.data[0], sigma=3, output=response_original, mode='reflect')
-    #tiffLib.imsave(outputPath + 'log_original.tif',np.float32(-response_original))  
+    #fileName = '5016EMML08_17.tif'
+    fileName = 'MC_1_5092Recon08_16-1.tif'
+    im = ImageIO.imReader(dataPath,fileName, 'tif',2) 
     
     log = mc.log_filtering(im.data[0],winSize=40,sigma=3,fg_thresh = 0.6)
     constrained_log = mc.laebl_connecte_comp(log,threshold=3.0,size_constrain = (2,80))
+    mcList = mc.MC_buildup_2d(im.data[0],constrained_log)
+    mc.MC_connect_2d(mcList,dis_threshold = 300)
+    for i in range(len(mcList)):
+        print mcList[i].density_2d
+
+    
     tiffLib.imsave(outputPath + 'log_constrained.tif',np.float32(constrained_log))
     tiffLib.imsave(outputPath + 'log_tile.tif',np.float32(log))'''
 
+    # 3d test
+    '''dataPath = 'C:/Tomosynthesis/localtest/'
+    outputPath = 'C:/Tomosynthesis/localtest/res/5092/'
+    fileName = '5092-2.tif'
+    im = ImageIO.imReader(dataPath,fileName, 'tif',3)
+    
+    start = time.clock()
+    mc_Lists = []
+    for i in range(im.size_2):
+        log = mc.log_filtering(im.data[i],winSize=40,sigma=3,fg_thresh = 0.6)
+        constrained_log = mc.laebl_connecte_comp(log,threshold=3.0,size_constrain = (2,80))
+        mcList = mc.MC_buildup_2d(im.data[i],constrained_log)
+        mc.MC_connect_2d(mcList,dis_threshold = 300)
+        for mc_item in mcList:
+            mc_item.center[2] = i
+        mc_Lists.append(mcList)
+        tiffLib.imsave(outputPath + str(i) + 'log_constrained.tif',np.float32(constrained_log))
+    end = time.clock()
+    print end - start
+    
+    global_id = mc.MC_connect_3d(mc_Lists)
+    gloabal_list = mc.MCs_constuct_3d(mc_Lists,global_id)
+    MC_List_3D = mc.MCs_constrain(gloabal_list)
+
+    for item in MC_List_3D:
+        print(item.center, item.intensity, item.volume)'''
+    
+    # 3d parallel test
+    '''dataPath = 'C:/Tomosynthesis/localtest/'
+    outputPath = 'C:/Tomosynthesis/localtest/res/5092/'
+    fileName = '5092-1.tif'
+    im = ImageIO.imReader(dataPath,fileName, 'tif',3)
+    print 'Finished Loading!'
+
+    start = time.clock()
+    mc_Lists = []   
+    pool = Pool(processes=3)
+    params =[(i,im.data[i]) for i in range(im.size_2)]
+    mc_Lists = pool.map(mc.parallelWrapper,params)
+    end = time.clock()
+    print end - start
+    
+    global_id = mc.MC_connect_3d(mc_Lists)
+    gloabal_list = mc.MCs_constuct_3d(mc_Lists,global_id)
+    MC_List_3D = mc.MCs_constrain(gloabal_list)
+
+    for item in MC_List_3D:
+        print(item.center, item.intensity, item.volume)  '''
 
     ############################ Creat Training Sample #############################
-
-    '''dataPath = 'C:/Tomosynthesis/training/'
+    
+    dataPath = 'C:/Tomosynthesis/training/control/'
     outputPath = 'C:/Tomosynthesis/localtest/res/'
-    patches_feats = Creat_trainSam.creatTrainigSam(dataPath,numrings = 5)
-    np.savetxt(outputPath + 'training_patches_feats.txt', patches_feats, delimiter='\t')'''
+    
+    ## Rings intensity features 
+    #rings_feats = Creat_trainSam.creatTrainigSam(dataPath,opt = 'Rings', numrings = 8)
+    #np.savetxt(outputPath + 'rings_feats_control.txt', rings_feats, delimiter='\t')
+    
+    ## FD featues
+    FD_feats = Creat_trainSam.creatTrainigSam(dataPath,opt = 'FD')
+    np.savetxt(outputPath + 'FD_feats_control.txt', FD_feats, delimiter='\t')
+
+    ## HOG features
+    #hog_feats = Creat_trainSam.creatTrainigSam(dataPath,opt = 'HOG')
+    #np.savetxt(outputPath + 'hog_feats_control.txt', hog_feats, delimiter='\t')
+    
+    
 
     ############################ HOG test #############################
-
+    '''
     dataPath = 'C:/Tomosynthesis/localtest/'
     outputPath = 'C:/Tomosynthesis/localtest/res/'
     #fileName = 'test-crop-1.tif'
@@ -178,7 +250,7 @@ def main():
     im.downSample(rate = 2)
     
     # histogram equalization
-    eqimg = histEqualization.histEqualization(im.sampled_data[0], 16)
+    eqimg = histEqualization.histEqualization(im.sampled_datas[0], 16)
     
     # smoothing
     smoothimg = filters.gaussian_filter(eqimg, sigma = 2, order=0, output=None, mode='reflect', cval=0.0, truncate=4.0)
@@ -221,6 +293,25 @@ def main():
     tiffLib.imsave(outputPath + fileName[0:11] +'gy.tif',np.float32(patch.gy))
     tiffLib.imsave(outputPath + fileName[0:11] +'local_orientation.tif',np.float32(patch.location_ori))
     tiffLib.imsave(outputPath + fileName[0:11] +'reflected_orientation.tif',np.float32(patch.greflorientation))
+    '''
 
+    ############################ FD Test #############################
 
-main()
+    '''
+    dataPath = 'C:/Tomosynthesis/training/cancer/'
+    outputPath = 'C:/Tomosynthesis/localtest/res/'   
+    fileName = '5047Recon08_51-1.tif'
+
+    im = ImageIO.imReader(dataPath,fileName, 'tif',2)
+    denoised = AT_denoising.DenoisingAW(im.data[0])
+    eqimg = histEqualization.histEqualization(denoised, 16)
+
+    patch = TPatch.TPatch()
+    patch.initialize(eqimg)
+    FD = patch.getFD()
+    print FD
+    tiffLib.imsave(outputPath + 'logpolarPSD.tif',np.float32(np.log10(patch.PSD_polar)))
+    '''
+    
+    
+

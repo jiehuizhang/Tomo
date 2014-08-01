@@ -15,7 +15,15 @@ class TImage:
  
     def __init__ (self, im = None):
         '''Initialization'''
-        self = im
+        #self = im
+
+        self.dim = 0
+        self.size_0 = 0
+        self.size_1 = 0
+        self.size_2 = 1
+        self.data_type = None
+        self.data = []
+        self.sampled_data = []
 
     def setDim(self,dim):
         self.dim = dim
@@ -47,10 +55,13 @@ class TImage:
 
         rows = np.array(range(0,self.size_0,rate))
         cols = np.array(range(0,self.size_1,rate))
-    
+        
         for i in range(self.size_2):
             rs = self.data[i][rows,:]
-            self.sampled_data.append(rs[:,cols])
+            cs = rs[:,cols]
+            self.sampled_data.append(cs)
+
+
             
 
 

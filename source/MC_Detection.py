@@ -4,6 +4,7 @@ import numpy as np
 from scipy import ndimage
 import scipy.ndimage.filters as filters
 import tiffLib
+import TMicroCal
 
 def bs_Estimatimation(imdata, threshold, depth = 16):
 
@@ -125,6 +126,146 @@ def laebl_connecte_comp(imdata, threshold, size_constrain):
     rm_imdata[index] = 0
 
     return rm_imdata
+
+def MC_buildup_2d(im,mc_im):
+
+    mask = mc_im > 0
+    label_im, nb_labels = ndimage.label(mask)
+    sizes = ndimage.sum(mask, label_im, range(1,nb_labels + 1))
+    mean_vals = ndimage.sum(im, label_im, range(1, nb_labels + 1))
+    mean_vals = mean_vals/sizes
+    
+    coordinateX_im = np.zeros(im.shape, dtype=np.int)
+    for i in range(im.shape[0]):
+        coordinateX_im[i,:] = i
+    coordinateY_im = np.zeros(im.shape, dtype=np.int)
+    for j in range(im.shape[1]):
+        coordinateY_im[:,j] = j
+    centers_X  = ndimage.sum(coordinateX_im, label_im, range(1, nb_labels + 1))
+    centers_Y  = ndimage.sum(coordinateY_im, label_im, range(1, nb_labels + 1))
+    centers_X = centers_X/sizes
+    centers_Y = centers_Y/sizes
+
+    
+    
+    mcList = []
+    for i in range(nb_labels):
+        mc = TMicroCal.TMicroCal()
+
+        mc.area = sizes[i]
+        mc.intensity = mean_vals[i]
+        mc.center[0] = int(centers_X[i])
+        mc.center[1] = int(centers_Y[i])
+        lab = label_im[int(centers_X[i])][int(centers_Y[i])]
+        mc.label = lab
+        slice_x, slice_y = ndimage.find_objects(label_im == lab)[0]
+        mc.roi = im[slice_x, slice_y]
+
+        mcList.append(mc)
+
+    return mcList
+        
+
+def MC_connect_2d(mcList,dis_threshold):
+
+    for mc in mcList:
+        cent = mc.center
+        for mc_oth in mcList:
+            cent_oth = mc_oth.center
+
+            dis = math.sqrt((cent[0] - cent_oth[0])**2 + (cent[1] - cent_oth[1])**2)
+            if dis<dis_threshold:
+                mc.neighbours_2d.append(mc_oth.label)
+                mc.neighbour_dis_2d.append(dis)
+        
+        mc.computeDensity_2d()
+
+def MC_connect_3d(mcLists,tolerance = 10):
+    
+    global_id = 0
+    z_size = len(mcLists)
+    for i in range(z_size-1):
+        for index_curr in range(len(mcLists[i])):
+            center = mcLists[i][index_curr].center
+            for indec_nxt in range(len(mcLists[i+1])):
+                neighb_cen = mcLists[i+1][indec_nxt].center
+                dis = math.sqrt((center[0] - neighb_cen[0])**2 + (center[1] - neighb_cen[1])**2)
+                if dis < tolerance:
+                    if mcLists[i][index_curr].global_flag == False:
+                        mcLists[i][index_curr].global_id = global_id
+                        global_id = global_id + 1
+                    mcLists[i+1][indec_nxt].global_id = mcLists[i][index_curr].global_id
+                    mcLists[i+1][indec_nxt].global_flag = True              
+    return global_id
+
+def MCs_constuct_3d(mcLists,global_id):
+
+    '''initilize lists '''
+    global_list = []
+    for i in range(global_id):
+        templist = []
+        global_list.append(templist)
+        
+    for i in range(len(mcLists)):
+        for item in mcLists[i]:
+            index = item.global_id
+            if index != None:
+                global_list[index].append(item)
+
+    return global_list
+
+def MCs_constrain(global_list, num_neighbour = 3):
+
+    MC_List_3D = []
+    for item in global_list:
+        if len(item) >= num_neighbour:
+            mc3d = TMicroCal.TMicroCal_3D()
+            cenx, ceny, cenz = 0,0,0
+            intensity = 0
+            volume = 0
+            for mc2d in item:
+                cenx = cenx + mc2d.center[0]
+                ceny = ceny + mc2d.center[1]
+                cenz = cenz + mc2d.center[2]
+                intensity = intensity + mc2d.intensity*mc2d.area
+                volume = volume + mc2d.area
+
+            length = len(item)
+            cenx = cenx/length
+            ceny = ceny/length
+            cenz = cenz/length
+            
+            mc3d.center = (int(cenx),int(ceny),int(cenz))
+            mc3d.volume = volume
+            mc3d.intensity = intensity/volume
+
+            MC_List_3D.append(mc3d)
+
+    return MC_List_3D
+
+def parallel_MC_Detection(i,imdata):
+    
+    log = log_filtering(imdata,winSize=40,sigma=3,fg_thresh = 0.6)
+    constrained_log = laebl_connecte_comp(log,threshold=3.0,size_constrain = (2,80))
+    mcList = MC_buildup_2d(imdata,constrained_log)
+    MC_connect_2d(mcList,dis_threshold = 300)
+    for mc_item in mcList:
+        mc_item.center[2] = i
+
+    return mcList
+                       
+def parallelWrapper(args):
+    
+    return parallel_MC_Detection(*args)
+        
+    
+                    
+                
+            
+            
+        
+        
+    
 
     
     
