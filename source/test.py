@@ -1,46 +1,55 @@
-import matplotlib.pyplot as plt
-import numpy as np
-from sklearn import datasets, linear_model
+from multiprocessing import current_process, cpu_count
+from multiprocessing import Manager, Process, Condition, Lock, Pool
+from multiprocessing.managers import BaseManager
+from datetime import datetime
+import sys
 
-# Load the diabetes dataset
-diabetes = datasets.load_diabetes()
+from pygraph.classes.graph import graph
+from pygraph.classes.digraph import digraph
+from pygraph.algorithms.minmax import minimal_spanning_tree,\
+shortest_path, heuristic_search, shortest_path_bellman_ford, maximum_flow, cut_tree
 
-
-# Use only one feature
-diabetes_X = diabetes.data[:, np.newaxis]
-diabetes_X_temp = diabetes_X[:, :, 2]
-
-# Split the data into training/testing sets
-diabetes_X_train = diabetes_X_temp[:-20]
-diabetes_X_test = diabetes_X_temp[-20:]
-
-# Split the targets into training/testing sets
-diabetes_y_train = diabetes.target[:-20]
-diabetes_y_test = diabetes.target[-20:]
-
-# Create linear regression object
-regr = linear_model.LinearRegression()
-
-# Train the model using the training sets
-regr.fit(diabetes_X_train, diabetes_y_train)
-print diabetes_X_train
-print diabetes_y_train.shape
+class Thing(object):
+    mylist = []
+    
+    def __init__(self):
+        self.mylist = [None,None,None,None]
 
 
-# The coefficients
-print('Coefficients: \n', regr.coef_)
-# The mean square error
-print("Residual sum of squares: %.2f"
-      % np.mean((regr.predict(diabetes_X_test) - diabetes_y_test) ** 2))
-# Explained variance score: 1 is perfect prediction
-print('Variance score: %.2f' % regr.score(diabetes_X_test, diabetes_y_test))
+class ScriptManager(BaseManager):
+    pass
 
-# Plot outputs
-plt.scatter(diabetes_X_test, diabetes_y_test,  color='black')
-plt.plot(diabetes_X_test, regr.predict(diabetes_X_test), color='blue',
-         linewidth=3)
+ScriptManager.register('Thing', Thing, exposed=['mylist'])
 
-plt.xticks(())
-plt.yticks(())
+def process(shared_object,i):
 
-plt.show()
+    shared_object.mylist[i] = 1
+    print shared_object.mylist[i]
+
+if __name__=='__main__':
+
+    gr = digraph()
+    gr.add_nodes([0,1,2,3,4,5])
+    gr.add_edge((0,1), wt=9)
+    gr.add_edge((0,2), wt=9)
+    gr.add_edge((0,3), wt=1)
+    gr.add_edge((0,4), wt=1)
+
+    gr.add_edge((1,5), wt=1)
+    gr.add_edge((1,2), wt=9)
+    
+    gr.add_edge((2,5), wt=1)
+    gr.add_edge((2,3), wt=1)
+    
+    gr.add_edge((3,5), wt=9)    
+    gr.add_edge((3,4), wt=9)
+    
+    gr.add_edge((4,5), wt=9)
+    flows, cuts = maximum_flow(gr, 0, 5)
+
+    print cuts
+    
+
+    
+
+

@@ -4,26 +4,36 @@ import numpy as np
 from numpy import linalg as LA
 from scipy import sqrt, pi, arctan2, cos, sin
 from scipy import stats
+from scipy import fftpack
 import matplotlib.pyplot as plt
 from sklearn import linear_model
+import scipy.ndimage.filters as filters
+import histEqualization
 import tiffLib
 import math
 
 class TPatch:
 
+    # variables
     pdata = None
     image_center = None
     patch_center = None
     data_size = None   # actual size
     patch_size = None
-      
+
+    # derived variables
+    downsampled = None
+
+    # Ring feats 
     rings = []
     numrings = None
     m_features = None
     v_features = None
     ringLinearSlopeMean = None
     ringLinearSlopeVar = None
+    rings_feats = None
 
+    #hog feats
     gx = None
     gy = None
     gmagnitude = None
@@ -46,9 +56,18 @@ class TPatch:
     gsectors = []
     normal_percentage = None
     normal_level = None
-    
+    hog_feats = None
+
+    # fd feats
     PSD_polar = None
     PSD = None
+    FD = None
+    ASP_H = None
+    ASP_varaince = None
+    ASP_std = None
+    FD_feats = None
+
+    feats = None
 
     def __init__ (self):
         '''Initialization'''
@@ -57,6 +76,8 @@ class TPatch:
         self.patch_center = None
         self.data_size = None   # actual size
         self.patch_size = None
+
+        self.downsampled = None
       
         self.rings = []
         self.numrings = None
@@ -64,6 +85,7 @@ class TPatch:
         self.v_features = None
         self.ringLinearSlopeMean = None
         self.ringLinearSlopeVar = None
+        self.rings_feats = None
 
         self.gx = None
         self.gy = None
@@ -85,9 +107,17 @@ class TPatch:
         self.gsectors = []
         self.normal_percentage = None
         self.normal_level = None
+        self.hog_feats = None
         
         self.PSD_polar = None
         self.PSD = None
+        self.FD = None
+        self.ASP_H = None
+        self.ASP_varaince = None
+        self.ASP_std = None
+        self.FD_feats = None
+
+        self.feats = None
 
     def initialize(self,imdata):
         '''Initialization with imagedata'''
@@ -96,7 +126,14 @@ class TPatch:
         
         self.patch_center = (imdata.shape[0]/2, imdata.shape[1]/2)
         self.patch_size = max(imdata.shape[0],imdata.shape[1])/2
+
+    def downSampling(self,rate = 2):
         
+        rows = np.array(range(0,self.data_size[0],rate))
+        cols = np.array(range(0,self.data_size[1],rate))
+
+        rs = self.pdata[rows,:]
+        self.downsampled = rs[:,cols]
 
     def getRing(self, radius1, radius2):
 
@@ -166,7 +203,6 @@ class TPatch:
 
         self.gmagnitude = sqrt(self.gx**2 + self.gy**2)
         self.gorientation = arctan2(self.gy, self.gx) * (180 / pi) % 180
-
         
     def gradOrieNormalize(self, threshold = 1200):
 
@@ -192,7 +228,6 @@ class TPatch:
         self.gnormorientation = 180 - abs(self.greflorientation - self.location_ori)
         mask = self.gmagnitude < threshold
         self.gnormorientation[mask] = 0
-
         self.gmagnitude[mask] = 0
         
 
@@ -279,6 +314,7 @@ class TPatch:
             
             norm_total = np.sum(self.gsectors[i])
             self.norGra_level[0,i] = np.double(norm_total)
+            
         self.norGra_level_mean = np.mean(self.norGra_level)
         self.norGra_level_max = np.max(self.norGra_level)
         self.norGra_level_std = np.std(self.norGra_level)
@@ -356,11 +392,13 @@ class TPatch:
                 
             polarPSD[i,:] = newvector
 
+        
+
         return polarPSD    
   
     def getFD(self, padded_size = 321, fqrange = (4,90)):
-
-        # zero padding
+        
+        # zero padding 
         padded_data = self.padding(padded_size)
 
         # compute PSD
@@ -397,16 +435,80 @@ class TPatch:
         theta = np.arange(0,180)
         m_theta = np.sum(theta*norm_s_theta)
         std = sqrt(np.sum(norm_s_theta*((theta - m_theta)**2)))
+
+        self.FD = FD
+        self.ASP_H = H
+        self.ASP_varaince = varaince
+        self.ASP_std = std
         
         return (FD,H,varaince,std)
+
+    def getRingsFeats(self, numrings):
+
+        self.getRings(numrings)
+        self.getRingsMeanFeats()
+        self.getRingsVarFeats()
+        self.LinearRegRingMeanFeats()
+        self.LinearRegRingVarFeats()
         
+        self.rings_feats = np.hstack((self.ringLinearSlopeMean, self.ringLinearSlopeVar))
         
+    def getHOGeats(self, numsector=36):
+        
+        # downsampling
+        self.downSampling(rate = 2)
+
+        # histogram equalization
+        eqimg = histEqualization.histEqualization(self.downsampled, 16)
+    
+        # smoothing
+        smoothimg = filters.gaussian_filter(eqimg, sigma = 2, order=0, output=None, mode='reflect')
+        #smoothimg = filters.gaussian_filter(eqimg, sigma = 2, order=0, output=None, mode='reflect', cval=0.0, truncate=4.0)
+            
+        self.computeGradient()
+        self.gradOrieNormalize(threshold = 1500)
+        self.getGSectors(numsector)
+        self.getNormLevl()
+        self.getNormGradmagnitude()
+        
+        self.hog_feats = np.hstack((self.norGra_level_mean,self.norGra_level_max,self.norGra_level_std))
+
+    def getFDFeats(self):
+
+        # downsampling
+        self.downSampling(rate = 2)
+
+        # histogram equalization
+        eqimg = histEqualization.histEqualization(self.downsampled, 16)
+
+        # smoothing
+        smoothimg = filters.gaussian_filter(eqimg, sigma = 2, order=0, output=None, mode='reflect')
+        #smoothimg = filters.gaussian_filter(eqimg, sigma = 2, order=0, output=None, mode='reflect', cval=0.0, truncate=4.0)
+
+        self.getFD(padded_size = 129, fqrange = (4,60))
+        
+        self.FD_feats = np.hstack((self.FD,self.ASP_H,self.ASP_varaince,self.ASP_std))
 
 
-       
+class TLightPatch:
+
+    # variables
+    pdata = None
+    image_center = None
+    patch_center = None
+    data_size = None   # actual size
+    patch_size = None
+    feats = None
+
+    def __init__ (self):
         
-                
-        
-        
+        self.pdata = None
+        self.image_center = None
+        self.patch_center = None
+        self.data_size = None   # actual size
+        self.patch_size = None
+        self.feats = None
+
+    
         
             
