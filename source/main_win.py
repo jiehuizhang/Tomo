@@ -25,14 +25,6 @@ import Dimreduction
 import classification
 import graph_classification as grc
 
-def f(x,y):
-    z = math.factorial(200)
-    return x*y
-
-def f_wrapper(args):
-    
-    return f(*args)
-
 if __name__ == '__main__':
 
     ############################## single smv convert#######################
