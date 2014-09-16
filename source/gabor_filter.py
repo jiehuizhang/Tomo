@@ -78,7 +78,7 @@ def compute_Response(image,kernels):
 
     response = []
     for kernel in kernels:
-        temp_response = nd.convolve(image, kernel, mode='constant', cval=0.0)
+        temp_response = nd.convolve(image, kernel, mode='nearest')
         response.append(temp_response)
     
     return response
@@ -89,7 +89,7 @@ def compute_Responses(image,filter_bank):
     for kernels in filter_bank:
         response = []
         for kernel in kernels:
-            temp_response = nd.convolve(image, kernel, mode='constant', cval=0.0)
+            temp_response = nd.convolve(image, kernel, mode='nearest')
             response.append(temp_response)
         responses.append(response)
     

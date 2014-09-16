@@ -19,55 +19,11 @@ class TPatch:
     image_center = None
     patch_center = None
     data_size = None   # actual size
-    patch_size = None
+    patch_size = None  # scalar , radius of the patch
 
     # derived variables
     downsampled = None
-
-    # Ring feats 
-    rings = []
-    numrings = None
-    m_features = None
-    v_features = None
-    ringLinearSlopeMean = None
-    ringLinearSlopeVar = None
-    rings_feats = None
-
-    #hog feats
-    gx = None
-    gy = None
     gmagnitude = None
-    gorientation = None
-    gnormorientation = None
-    greflorientation = None
-    location_ori = None
-    nor_perc_max = None
-    nor_perc_mean = None
-    nor_perc_std = None
-    nor_lev_mean = None
-    nor_lev_max = None
-    nor_lev_std = None
-    norGra_level_mean = None
-    norGra_level_max = None
-    norGra_level_std = None
-    norGra_level = None
-
-    numsectors = None
-    gsectors = []
-    normal_percentage = None
-    normal_level = None
-    hog_feats = None
-
-    # fd feats
-    PSD_polar = None
-    PSD = None
-    FD = None
-    ASP_H = None
-    ASP_varaince = None
-    ASP_std = None
-    FD_feats = None
-
-    feats = None
 
     def __init__ (self):
         '''Initialization'''
@@ -78,46 +34,7 @@ class TPatch:
         self.patch_size = None
 
         self.downsampled = None
-      
-        self.rings = []
-        self.numrings = None
-        self.m_features = None
-        self.v_features = None
-        self.ringLinearSlopeMean = None
-        self.ringLinearSlopeVar = None
-        self.rings_feats = None
-
-        self.gx = None
-        self.gy = None
         self.gmagnitude = None
-        self.gorientation = None
-        self.gnormorientation = None
-        self.greflorientation = None
-        self.location_ori = None
-        self.nor_perc_max = None
-        self.nor_perc_mean = None
-        self.nor_lev_mean = None
-        self.nor_lev_max = None
-        self.norGra_level_mean = None
-        self.norGra_level_max = None
-        self.norGra_level_std = None
-        self.norGra_level = None
-
-        self.numsectors = None
-        self.gsectors = []
-        self.normal_percentage = None
-        self.normal_level = None
-        self.hog_feats = None
-        
-        self.PSD_polar = None
-        self.PSD = None
-        self.FD = None
-        self.ASP_H = None
-        self.ASP_varaince = None
-        self.ASP_std = None
-        self.FD_feats = None
-
-        self.feats = None
 
     def initialize(self,imdata):
         '''Initialization with imagedata'''
@@ -135,380 +52,189 @@ class TPatch:
         rs = self.pdata[rows,:]
         self.downsampled = rs[:,cols]
 
-    def getRing(self, radius1, radius2):
+
+    def getRings(self,data, numrings, dr_ini,r_ini = 0,delta_dr = 2):
 
         nr,nc = self.data_size
         X, Y = np.ogrid[0:nr-1, 0:nc-1]
 
-        mask1 = (X - self.patch_center[0])**2 + (Y - self.patch_center[1])**2 < radius1**2
-        mask2 = (X - self.patch_center[0])**2 + (Y - self.patch_center[1])**2 < radius2**2
-
-        mask = mask2-mask1
-        ring = self.pdata[mask]
-        
-        return ring
-
-    def getRings(self,numrings):
-
-        self.rings = []
-        r1 = 0
-        self.numrings = numrings
+        rings = []
+        r1 = r_ini
         dr = self.patch_size/numrings
+        dr = dr + dr_ini
+        
         for i in range(numrings):
-            r2 = r1 + dr
-            ring = self.getRing(r1,r2)
-            self.rings.append(ring)
+            r2 = r1 + dr      
+
+            mask1 = (X - self.patch_center[0])**2 + (Y - self.patch_center[1])**2 < r1**2
+            mask2 = (X - self.patch_center[0])**2 + (Y - self.patch_center[1])**2 < r2**2
+
+            mask = mask2-mask1
+            ring = data[mask]
+            
+            rings.append(ring)
             r1 = r1 + dr
-            dr = max(dr - 2,5)
+            dr = max(dr - delta_dr,5)
 
+            # for debugging
+            outputPath = 'C:/Tomosynthesis/localtest/res/'
+            temp = np.zeros(self.pdata.shape,np.double)
+            temp[:,:] = data[:,:]
+            temp[mask] = 0
+            tiffLib.imsave(outputPath + str(i) + 'rings.tif',np.float32(temp))
 
-    def getRingsMeanFeats(self):
+        return rings
 
-        self.m_features = np.zeros((1,self.numrings), dtype=np.double)
-        for i in range(self.numrings):
-            self.m_features[0,i] = np.mean(self.rings[i])
+    def getSectors(self,data, numsects):
 
-    def LinearRegRingMeanFeats(self):
-        
-        sequence = np.arange(self.m_features.shape[1])     
-        slope, intercept, r_value, p_value, std_err = stats.linregress(sequence,self.m_features[0])
-        self.ringLinearSlopeMean = slope
-        return slope
+        dangle = 360/numsects
 
-    def getRingsVarFeats(self):
-
-        self.v_features = np.zeros((1,self.numrings), dtype=np.double)
-        for i in range(self.numrings):
-            self.v_features[0,i] = np.std(self.rings[i])
-
-    def LinearRegRingVarFeats(self):
-        
-        sequence = np.arange(self.v_features.shape[1])     
-        slope, intercept, r_value, p_value, std_err = stats.linregress(sequence,self.v_features[0])
-        self.ringLinearSlopeVar = slope
-        return slope
-
-    def dumpRingsFeats(self):
-
-        feat_table = np.hstack((self.m_features,self.v_features))
-
-        return feat_table
-
-    def computeGradient(self):
-        
-        self.gx = np.zeros(self.data_size,dtype=np.double)
-        self.gy = np.zeros(self.data_size,dtype=np.double)
-        self.gx[:, :-1] = np.diff(np.double(self.pdata), n=1, axis=1)
-        self.gy[:-1, :] = np.diff(np.double(self.pdata), n=1, axis=0)
-
-        self.gmagnitude = sqrt(self.gx**2 + self.gy**2)
-        self.gorientation = arctan2(self.gy, self.gx) * (180 / pi) % 180
-        
-    def gradOrieNormalize(self, threshold = 1200):
-
-        nr,nc = self.data_size
-        self.gnormorientation = np.zeros(self.data_size,dtype=np.double)
-        self.location_ori = np.zeros(self.data_size,dtype=np.double)
-        self.greflorientation = np.zeros(self.data_size,dtype=np.double)
-
-        for i in range(nr):
-            y = i - self.patch_center[0]
-            for j in range(nc):
-                x = j - self.patch_center[1]
-                self.location_ori[i][j] = arctan2(abs(y), abs(x)) * (180 / pi) % 180
-                
-                # first & third
-                if x*y <=0:
-                    self.greflorientation[i][j] = self.gorientation[i][j]
-                    
-                # second & forth
-                else:
-                    self.greflorientation[i][j] = 180 - self.gorientation[i][j]
-                    
-        self.gnormorientation = 180 - abs(self.greflorientation - self.location_ori)
-        mask = self.gmagnitude < threshold
-        self.gnormorientation[mask] = 0
-        self.gmagnitude[mask] = 0
-        
-
-    def getSectorMask(self, angle_range, radius = 'default'):
-
-        if radius == 'default':
-            radius = self.patch_size
-
-        shape = self.data_size
-        centre = self.patch_center
-        x,y = np.ogrid[:shape[0],:shape[1]]
-        cx,cy = centre
-        tmin,tmax = np.deg2rad(angle_range)
-
-        # ensure stop angle > start angle
-        if tmax < tmin:
-                tmax += 2*np.pi
-
-        # convert cartesian --> polar coordinates
-        r2 = (x-cx)*(x-cx) + (y-cy)*(y-cy)
-        theta = np.arctan2(x-cx,y-cy) - tmin
-
-        # wrap angles between 0 and 2*pi
-        theta %= (2*np.pi)
-
-        # circular mask
-        circmask = r2 <= radius*radius
-
-        # angular mask
-        anglemask = theta <= (tmax-tmin)
-
-        return circmask*anglemask
-
-    def getGSectors(self, numsectors):
-     
-        self.numsectors = numsectors
-        dangle = 360/numsectors
-
-        self.gsectors = []
+        gsectors = []
 
         angle1 = 0
-        for i in range(numsectors):
+        for i in range(numsects):
+            
             angle2 = angle1 + dangle
-            mask = self.getSectorMask((angle1,angle2))
-            #sector = self.gnormorientation[mask]
-            # test using magnitude
-            sector = self.gmagnitude[mask] 
             
+            radius = self.patch_size
+            shape = self.pdata.shape
+
+            x,y = np.ogrid[:shape[0],:shape[1]]
+            cx,cy = self.patch_center
+            tmin,tmax = np.deg2rad((angle1,angle2))
+
+            # ensure stop angle > start angle
+            if tmax < tmin:
+                    tmax += 2*np.pi
+
+            # convert cartesian --> polar coordinates
+            r2 = (x-cx)*(x-cx) + (y-cy)*(y-cy)
+            theta = np.arctan2(x-cx,y-cy) - tmin
+
+            # wrap angles between 0 and 2*pi
+            theta %= (2*np.pi)
+
+            # circular mask
+            circmask = r2 <= radius*radius
+
+            # angular mask
+            anglemask = theta <= (tmax-tmin)
+
+            mask = circmask*anglemask
+
+            
+            sector = data[mask]          
             angle1 = angle1 + dangle
+            gsectors.append(sector)
 
-            self.gsectors.append(sector)
+            # for debugging
+            outputPath = 'C:/Tomosynthesis/localtest/res/'
+            temp = np.zeros(self.pdata.shape,np.double)
+            temp[:,:] = data[:,:]
+            temp[mask] = 0
+            tiffLib.imsave(outputPath + str(i) + 'sectors.tif',np.float32(temp))
 
-    def getNormPerc(self, norm_th = 135):
+        return gsectors
+
+    def computeGradient(self, threshold = 1500):
         
-        self.normal_percentage = np.zeros((1,self.numsectors), dtype=np.double)
-        for i in range(self.numsectors):
-            mask = self.gsectors[i] > norm_th
-            norm_count = self.gsectors[i][mask].shape[0]
-            total_count = self.gsectors[i].shape[0]
-            self.normal_percentage[0,i] = np.double(norm_count)/np.double(total_count)
-        self.nor_perc_mean = np.mean(self.normal_percentage)
-        self.nor_perc_max = np.max(self.normal_percentage)
-        self.nor_perc_std = np.std(self.normal_percentage)
+        gx = np.zeros(self.data_size,dtype=np.double)
+        gy = np.zeros(self.data_size,dtype=np.double)
+        gx[:, :-1] = np.diff(np.double(self.pdata), n=1, axis=1)
+        gy[:-1, :] = np.diff(np.double(self.pdata), n=1, axis=0)
+
+        self.gmagnitude = sqrt(gx**2 + gy**2)
+        mask = self.gmagnitude < threshold
+        self.gmagnitude[mask] = 0
+
+    def getIntenfeats(self, int_Rnum, int_Snum):
+
+        ''' intensity ring feats'''
+        int_rings = self.getRings( self.pdata, int_Rnum, dr_ini = 5,r_ini = 15,delta_dr = 2)
         
-
-    def getNormLevl(self):
-
-        self.normal_level = np.zeros((1,self.numsectors), dtype=np.double)
-        for i in range(self.numsectors):
+        #### calculate mean
+        mIntRing = np.zeros((1,int_Rnum), dtype=np.double)
+        for i in range(int_Rnum):
+            mIntRing[0,i] = np.mean(int_rings[i])
             
-            norm_total = np.sum(self.gsectors[i])
-            mask = self.gsectors[i] > 0
-            total_count = self.gsectors[i].shape[0]
-            self.normal_level[0,i] = np.double(norm_total)/np.double(total_count)
-        self.nor_lev_mean = np.mean(self.normal_level)
-        self.nor_lev_max = np.max(self.normal_level)
-        self.nor_lev_std = np.std(self.normal_level)
+        # mean linear regration
+        sequence = np.arange(mIntRing.shape[1])     
+        slope, intercept, r_value, p_value, std_err = stats.linregress(sequence,mIntRing[0])
+        intMLinear = slope
 
+        # variance of mean
+        var_mIntRing = np.std(mIntRing)
 
-    def getNormGradmagnitude(self):
+        #### calculate varriance
+        vIntRing = np.zeros((1,int_Rnum), dtype=np.double)
+        for i in range(int_Rnum):
+            vIntRing[0,i] = np.std(int_rings[i])
 
-        self.norGra_level = np.zeros((1,self.numsectors), dtype=np.double)
-        for i in range(self.numsectors):
-            
-            norm_total = np.sum(self.gsectors[i])
-            self.norGra_level[0,i] = np.double(norm_total)
-            
-        self.norGra_level_mean = np.mean(self.norGra_level)
-        self.norGra_level_max = np.max(self.norGra_level)
-        self.norGra_level_std = np.std(self.norGra_level)
+        # variance linear regretion
+        sequence = np.arange(vIntRing.shape[1])     
+        slope, intercept, r_value, p_value, std_err = stats.linregress(sequence,vIntRing[0])
+        intVLinear = slope
 
-    def padding(self,padded_size):
+        '''intensity sector feats    '''
+        int_sectors = self.getSectors(self.pdata, int_Snum)
 
-        if self.data_size[0] >= padded_size:
-            vertical = 0
-            if self.data_size[1] >= padded_size:
-                horizontal = 0              
-            else:
-                horizontal = padded_size - self.data_size[1]
-        if self.data_size[1] >= padded_size:
-            horizontal = 0
-            if self.data_size[0] >= padded_size:
-                vertical = 0
-            else:
-                vertical = padded_size - self.data_size[0]
-        if self.data_size[0] < padded_size and self.data_size[1] < padded_size:         
-            vertical = padded_size - self.data_size[0]
-            horizontal = padded_size - self.data_size[1]
+        # calculate mean intensity power 
+        mIntSec = np.zeros((1,int_Snum), dtype=np.double)
+        for i in range(int_Snum):
+            mIntSec[0,i] = np.mean(int_sectors[i])
         
-        up = vertical/2
-        down = vertical - up
+        mIntSec = mIntSec/np.sum(mIntSec)
+        intSsorted =  -np.sort(-mIntSec)
+
+        threshold = 1.0/int_Snum
+        mask = intSsorted > threshold
+        int_power = intSsorted[mask].size
+
+        angular_pdiff =  np.sum(intSsorted[:,0:4])-np.sum(intSsorted[:,8:int_Snum])
+
+        #print int_power
         
-        right = horizontal/2
-        left = horizontal - right
+        return  np.hstack((intMLinear, var_mIntRing, angular_pdiff, int_power))
 
-        return np.lib.pad(self.pdata, ((up,down),(left,right)),'edge')
+    def getGradfeats(self, gr_Rnum, gr_Snum):
 
-    def converCARToPOL(self,PSD, freq = 128):
+        ## gradient ring feats         ##################
+        self.computeGradient(threshold = 2500)
+        gr_rings = self.getRings( self.gmagnitude, gr_Rnum, dr_ini = 0,r_ini = 15,delta_dr = 1)
 
-        numr, numc = PSD.shape
-        
-        # mapping from cartisaian to polar coordinate 
-        polarPSD = np.zeros((freq,180), dtype=np.double)
-        counter = np.ones((freq,180), dtype=np.int)
-        center = (PSD.shape[0]/2, PSD.shape[1]/2)
-        for i in range(numr/2):
-            for j in range(numc):
-                theta = int(arctan2(center[0]-i, j-center[1]) * (180 / pi) % 180)
-                r = int(sqrt((i - center[0])**2 + (j - center[1])**2))
-                if r < freq:
-                    polarPSD[r,theta] = polarPSD[r,theta] + PSD[i,j]
-                    counter[r,theta] = counter[r,theta] + 1
-        polarPSD = polarPSD/counter
+        # calculate mean
+        mGrRing = np.zeros((1,gr_Rnum), dtype=np.double)
+        for i in range(gr_Rnum):
+            mGrRing[0,i] = np.mean(gr_rings[i])
 
-        # filling zero entries
-        for i in range(polarPSD.shape[0]):
-            vector = polarPSD[i,:]
-            newvector = np.zeros(vector.shape)
-            validid = vector>0
-            values = vector[validid]
-            if values.shape[0] == 0:
-                values = np.ones((1,),np.double)*0.001
-
-            # creat shifted ids
-            tempmat = np.zeros(validid.shape)
-            applied_id = tempmat>0
-            previous = 0
-            current = 0
-            for t in range(validid.shape[0]):
-                if validid[t] == True:
-                    current = t
-                    if previous > 0:
-                        applied_id[(current + previous)/2]=True
-                    previous = current
-            # filling          
-            counter = 0
-            for j in range(vector.shape[0]):
-                val = values[counter]
-                if validid[j] == True:
-                    counter = min(counter + 1,values.shape[0]-1)             
-                newvector[j] = val
-                
-            polarPSD[i,:] = newvector
-
+        mGrRing = mGrRing/np.sum(mGrRing)
+        maxGring = np.max(mGrRing[0:3])   #  this is a feature
         
 
-        return polarPSD    
-  
-    def getFD(self, padded_size = 321, fqrange = (4,90)):
+        ## gradient sector feats         ##################
+        gr_sectors = self.getSectors(self.gmagnitude, gr_Snum)
+
+        # calculate mean
+        mGrSect = np.zeros((1,gr_Snum), dtype=np.double)
+        for i in range(gr_Snum):
+            mGrSect[0,i] = np.mean(gr_sectors[i])
+
+        mGrSect = mGrSect/np.sum(mGrSect)
+        mGrSect = -np.sort(-mGrSect)
+
+        angular_paccum = np.sum(mGrSect[:,0:6])  #  this is a feature
+        angular_pdiff = np.sum(mGrSect[:,0:5])- np.sum(mGrSect[:,8:gr_Snum])  #  this is a feature
+
+        threshold = 1.0/gr_Snum
+        mask = mGrSect > threshold
+        grSpower = mGrSect[mask].size    # this is a feature
+      
+        return np.hstack((maxGring, angular_paccum, angular_paccum, grSpower))
+
+
         
-        # zero padding 
-        padded_data = self.padding(padded_size)
-
-        # compute PSD
-        shiftedFT = np.fft.fftshift(np.fft.fft2(padded_data))
-        self.PSD = np.abs(shiftedFT**2)
-
-        # convert to polar space
-        self.PSD_polar = self.converCARToPOL(self.PSD,(padded_size - 1) /2)
-
-        # transform to 1-d frequency function
-        s_f = np.sum(self.PSD_polar,1)/180
-
-        # linear regression
-        valid_sf = s_f[fqrange[0]:fqrange[1]]
-        freqband = np.arange(fqrange[0],fqrange[1])
-        freqband = 1.0/np.double(freqband)      
-        slope, intercept, r_value, p_value, std_err = stats.linregress(np.log10(freqband),np.log10(valid_sf))
-
-        FD = (8 - slope)/2
-
-        # transform to 1-d angular function
-        valid_polarspd = self.PSD_polar[fqrange[0]:fqrange[1],:]
-        s_theta = np.sum(self.PSD_polar,0)/valid_polarspd.shape[0]
-        norm_s_theta = s_theta/LA.norm(s_theta,1)
-
-        # entropy of angular spread power
-        H = np.sum(-norm_s_theta * np.log2(norm_s_theta))
-
-        # varaince of angular spread power
-        mean = np.mean(norm_s_theta)
-        varaince = np.sum((norm_s_theta - mean)**2)/norm_s_theta.shape[0]
-
-        # std of angular spread power
-        theta = np.arange(0,180)
-        m_theta = np.sum(theta*norm_s_theta)
-        std = sqrt(np.sum(norm_s_theta*((theta - m_theta)**2)))
-
-        self.FD = FD
-        self.ASP_H = H
-        self.ASP_varaince = varaince
-        self.ASP_std = std
-        
-        return (FD,H,varaince,std)
-
-    def getRingsFeats(self, numrings):
-
-        self.getRings(numrings)
-        self.getRingsMeanFeats()
-        self.getRingsVarFeats()
-        self.LinearRegRingMeanFeats()
-        self.LinearRegRingVarFeats()
-        
-        self.rings_feats = np.hstack((self.ringLinearSlopeMean, self.ringLinearSlopeVar))
-        
-    def getHOGeats(self, numsector=36):
-        
-        # downsampling
-        self.downSampling(rate = 2)
-
-        # histogram equalization
-        eqimg = histEqualization.histEqualization(self.downsampled, 16)
-    
-        # smoothing
-        smoothimg = filters.gaussian_filter(eqimg, sigma = 2, order=0, output=None, mode='reflect')
-        #smoothimg = filters.gaussian_filter(eqimg, sigma = 2, order=0, output=None, mode='reflect', cval=0.0, truncate=4.0)
-            
-        self.computeGradient()
-        self.gradOrieNormalize(threshold = 1500)
-        self.getGSectors(numsector)
-        self.getNormLevl()
-        self.getNormGradmagnitude()
-        
-        self.hog_feats = np.hstack((self.norGra_level_mean,self.norGra_level_max,self.norGra_level_std))
-
-    def getFDFeats(self):
-
-        # downsampling
-        self.downSampling(rate = 2)
-
-        # histogram equalization
-        eqimg = histEqualization.histEqualization(self.downsampled, 16)
-
-        # smoothing
-        smoothimg = filters.gaussian_filter(eqimg, sigma = 2, order=0, output=None, mode='reflect')
-        #smoothimg = filters.gaussian_filter(eqimg, sigma = 2, order=0, output=None, mode='reflect', cval=0.0, truncate=4.0)
-
-        self.getFD(padded_size = 129, fqrange = (4,60))
-        
-        self.FD_feats = np.hstack((self.FD,self.ASP_H,self.ASP_varaince,self.ASP_std))
-
-
-class TLightPatch:
-
-    # variables
-    pdata = None
-    image_center = None
-    patch_center = None
-    data_size = None   # actual size
-    patch_size = None
-    feats = None
-
-    def __init__ (self):
-        
-        self.pdata = None
-        self.image_center = None
-        self.patch_center = None
-        self.data_size = None   # actual size
-        self.patch_size = None
-        self.feats = None
 
     
-        
-            
+
+
+    

@@ -99,7 +99,6 @@ def readTiff(fname,dim):
     if dim>2:
         im_array = tiffLib.imread(fname)
         im_shape = im_array.shape
-        print im_shape
         
         tifIm.setSize(im_shape[1],im_shape[2],im_shape[0])
         data = []
@@ -109,7 +108,6 @@ def readTiff(fname,dim):
     else:
         im_array = tiffLib.imread(fname)
         im_shape = im_array.shape
-        print im_shape
         
         tifIm.setSize(im_shape[0],im_shape[1],1)
         data = []

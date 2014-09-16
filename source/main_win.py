@@ -25,6 +25,8 @@ import Dimreduction
 import classification
 import graph_classification as grc
 
+
+
 if __name__ == '__main__':
 
     ############################## single smv convert#######################
@@ -56,13 +58,13 @@ if __name__ == '__main__':
     tiffLib.imsave(dataPath + 'test_de_eq.tif',de_eq)'''
 
     ############################ Gabor test #############################
-    '''## Gabor kernel test
-    dataPath = 'C:/Tomosynthesis/localtest/'
+    ## Gabor kernel test
+    '''dataPath = 'C:/Tomosynthesis/localtest/'
     outputPath = 'C:/Tomosynthesis/localtest/res/'
-    fileName = 'test-crop.tif'
+    fileName = '5016_test.tif'
     im = ImageIO.imReader(dataPath,fileName, 'tif',2)
 
-    kernels = gabor_filter.creat_Gabor_Kernels(4, 20, 0.0185,0.9)
+    kernels = gabor_filter.creat_Gabor_Kernels(8, 20, 0.0185,0.9)
     response = gabor_filter.compute_Response(im.data[0],kernels)
 
     gabor_filter.plot_Kernels(kernels)
@@ -94,29 +96,14 @@ if __name__ == '__main__':
     
 
     ## Gabor kernel response analysis test
-    '''dataPath = 'C:/Tomosynthesis/localtest/'
+    '''
+    dataPath = 'C:/Tomosynthesis/localtest/'
     outputPath = 'C:/Tomosynthesis/localtest/res/'
-    fileName = 'test-crop.tif'
+    fileName = '5016_test.tif'
     im = ImageIO.imReader(dataPath,fileName, 'tif',2)
 
     params = []
-    params.append([4, 20, 0.0185,0.9])
-    #params.append([4, 5, 0.01,1])
-    #params.append([4, 5, 0.025,1])
-    #params.append([4, 5, 0.05,1])
-    #params.append([4, 5, 0.075,1])
-
-    #params.append([4, 10, 0.01,1])
-    #params.append([4, 10, 0.025,1.7])
-    #params.append([4, 10, 0.05,1])
-
-    #params.append([4, 15, 0.01,1])
-    #params.append([4, 15, 0.0175,1.5])
-    #params.append([4, 15, 0.025,1])
-
-    #params.append([4, 20, 0.01,1])
-    #params.append([4, 20, 0.0175,1])
-    #params.append([4, 20, 0.0175,1])
+    params.append([8, 20, 0.0185,0.9])
     
     for k in range(len(params)):
         sampRate = 30
@@ -135,7 +122,11 @@ if __name__ == '__main__':
             tiffLib.imsave(outputPath + str(k) + '_' + str(i) + 'response.tif',np.float32(response[i]))
             tiffLib.imsave(outputPath + str(k) + '_' + str(i) + 'batchResp.tif',np.float32(batchResp[i]))
             tiffLib.imsave(outputPath + str(k) + '_' + str(i) + 'integratedResp.tif',np.float32(integratedResp[i]))
-        patches = fex.patch_Extraction(im.data[0],poll,0,sampRate,90,7.5)
+
+        patches = fex.patch_Extraction(im.data[0],poll,0,sampRate,90,threshold = 16.4)
+        for i in range(len(patches)):
+            tiffLib.imsave(outputPath + str(i) + 'patches.tif',np.float32(patches[i].pdata))
+        
         patches_feats = np.zeros((1,10), dtype=np.double)
         for i in range(len(patches)):
             patches[i].getRings(numrings = 5)
@@ -143,9 +134,8 @@ if __name__ == '__main__':
             patches[i].getVarFeats()
             patches_feats = np.vstack((patches_feats,patches[i].dumpFeats()))
             
-        np.savetxt(outputPath + 'patches_feats.txt', patches_feats, delimiter='\t')   
-        for i in range(len(patches)):
-            tiffLib.imsave(outputPath + str(i) + 'patches.tif',np.float32(patches[i].pdata))'''
+        np.savetxt(outputPath + 'patches_feats.txt', patches_feats, delimiter='\t')  '''
+        
 
     ############################# Mass 3D Extraction ########################
     '''
@@ -224,33 +214,41 @@ if __name__ == '__main__':
         print(item.center, item.intensity, item.volume)  '''
 
     ############################ Creat Training Sample #############################
-    '''
-    dataPath = 'C:/Tomosynthesis/training/cancer/'
+    
+    dataPath = 'C:/Tomosynthesis/training/control_1/'
     outputPath = 'C:/Tomosynthesis/localtest/res/'
 
     
-    ## Rings intensity features 
-    rings_feats = Creat_trainSam.creatTrainigSam(dataPath,opt = 'Rings', numrings = 8)
-    np.savetxt(outputPath + 'rings_feats_cancer.txt', rings_feats, delimiter='\t')
+    '''## intensity features 
+    int_feats = Creat_trainSam.creatTrainigSam(dataPath,opt = 'Int', iRnum = 8,iSnum = 24)
+    np.savetxt(outputPath + 'int_feats_cancer.txt', int_feats, delimiter='\t')
     
+    
+    ## gradient features    
+    gr_feats = Creat_trainSam.creatTrainigSam(dataPath,opt = 'Grad')
+    np.savetxt(outputPath + 'gr_feats_cancer.txt', gr_feats, delimiter='\t')'''
+
+    ## all options
+    feats = Creat_trainSam.creatTrainigSam(dataPath,opt = 'all')
+    np.savetxt(outputPath + 'feats_control_1.txt', feats, delimiter='\t')
+
+    '''
     ## FD featues
     FD_feats = Creat_trainSam.creatTrainigSam(dataPath,opt = 'FD')
     np.savetxt(outputPath + 'FD_feats_cancer.txt', FD_feats, delimiter='\t')
-
-    ## HOG features
-    hog_feats = Creat_trainSam.creatTrainigSam(dataPath,opt = 'HOG')
-    np.savetxt(outputPath + 'hog_feats_cancer.txt', hog_feats, delimiter='\t')
-
-    feats = np.hstack((rings_feats,FD_feats,hog_feats))
-    np.savetxt(outputPath + 'feats_cancer.txt', feats, delimiter='\t')
     
 
+
+    feats = np.hstack((rings_feats,FD_feats,hog_feats))
+    np.savetxt(outputPath + 'feats_cancer.txt', feats, delimiter='\t')    
+    
     patchList = Creat_trainSam.creatTrainigSam(dataPath,opt = 'all')
     # save the workspace
     output = open(outputPath + 'cancer.pkl', 'wb')
     pickle.dump(patchList, output)
     output.close()
     '''
+    
 
 
     ############################ HOG test #############################
@@ -427,9 +425,9 @@ if __name__ == '__main__':
     '''
     
     ############################# graph classification #######################################
-
+    '''
     path = 'C:/Tomosynthesis/localtest/res/'
-
+ 
     print 'loading data...'
     sus_file = open(path + 'workspace.pkl', 'rb')
     sliceList = pickle.load(sus_file)
@@ -444,6 +442,10 @@ if __name__ == '__main__':
     control_file.close()
 
     predicts = grc.mainClassify(sliceList,cancerList,controlList)
+
+    print predicts
+    '''
+    
     
     
         

@@ -1,7 +1,11 @@
 """Extract Features"""
 import TPatch
 
-def patch_Extraction(im, poll, zslice, sampRate, patch_size, threshold):
+def patch_Extraction(im, poll, zslice, sampRate, patch_size, threshold = 16.4):
+    '''
+    threshold = 7.5(not nesseary optimal) if num_orientation = 4
+    threshold = 16.4 if num_orientation = 8
+    '''
     patches = []
 
     nrow = im.shape[0]

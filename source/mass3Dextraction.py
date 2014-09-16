@@ -73,8 +73,8 @@ def Mass3dExtra(im,classifier):
         false_lab = np.zeros((slice_feats.shape[0],0))
         data_projected = Dimreduction.dim_Reduction(slice_feats, false_lab, opt ='randtree',
                                                     n_components=2, visualize = False)
-        classifier.classify(data_projected)
-        im.predicts[i] = classifier.predicts
+        # classifier.classify(data_projected)
+        # im.predicts[i] = classifier.predicts
 
 '''Process in parallel'''
 def parallel_Mass_Extra(i,imdata,classifier):
@@ -111,6 +111,7 @@ def parallel_Mass_Extra(i,imdata,classifier):
         lightPatch = TPatch.TLightPatch()
         lightPatch.image_center = patches[k].image_center
         lightPatch.pdata = patches[k].pdata
+        lightPatch.patch_center = patches[k].patch_center
         imageSlice.LightPatchList.append(lightPatch)
 
     # data projecting
@@ -121,9 +122,9 @@ def parallel_Mass_Extra(i,imdata,classifier):
     imageSlice.predicts = classifier.predicts
     imageSlice.feats = slice_feats
 
-    #for debugging
-    outputPath = '/home/yanbin/localtest/'
-    np.savetxt(outputPath + str(i) + '_feats.txt', slice_feats, delimiter='\t')
+    # for debugging
+    # outputPath = '/home/yanbin/localtest/'
+    # np.savetxt(outputPath + str(i) + '_feats.txt', slice_feats, delimiter='\t')
     return imageSlice
 
   

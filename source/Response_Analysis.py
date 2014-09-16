@@ -83,7 +83,11 @@ def getCDF(temp_response):
     
     return cdf
 
-def getODF(response, threshold = 0.2):
+def getODF(response, threshold = 0.1):
+    '''
+    threshold = 0.2 for num_orientation = 4
+    threshold = 0.1 for num_orientation = 8
+    '''
     shape = response[0].shape
     numResp = len(response)
     epsilon=0.00001
@@ -106,6 +110,10 @@ def getODF(response, threshold = 0.2):
     return odf
     
 def vote(response,alpha = 1.1):
+    '''
+    alpha = 1.1 for num_orientation = 4
+    alpha = 0.55 for num_orientation = 8
+    '''
     numResp = len(response)
     shape = response[0].shape
     nrow = shape[0]
