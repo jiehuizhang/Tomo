@@ -5,25 +5,18 @@ from numpy import linalg as LA
 from scipy import sqrt, pi, arctan2, cos, sin
 from scipy import stats
 from scipy import fftpack
-import matplotlib.pyplot as plt
 from sklearn import linear_model
 import scipy.ndimage.filters as filters
 import histEqualization
 import tiffLib
 import math
 
+import histEqualization
+import AT_denoising
+import activeContourSegmentation as acSeg
+import morphsnakes
+
 class TPatch:
-
-    # variables
-    pdata = None
-    image_center = None
-    patch_center = None
-    data_size = None   # actual size
-    patch_size = None  # scalar , radius of the patch
-
-    # derived variables
-    downsampled = None
-    gmagnitude = None
 
     def __init__ (self):
         '''Initialization'''
@@ -35,6 +28,12 @@ class TPatch:
 
         self.downsampled = None
         self.gmagnitude = None
+		
+        self.bagID = None
+        self.instanceID = None
+
+    def __repr__(self):
+        return 'TPatch' 
 
     def initialize(self,imdata):
         '''Initialization with imagedata'''
@@ -77,11 +76,13 @@ class TPatch:
             dr = max(dr - delta_dr,5)
 
             # for debugging
+            '''
             outputPath = 'C:/Tomosynthesis/localtest/res/'
             temp = np.zeros(self.pdata.shape,np.double)
             temp[:,:] = data[:,:]
             temp[mask] = 0
             tiffLib.imsave(outputPath + str(i) + 'rings.tif',np.float32(temp))
+            '''
 
         return rings
 
@@ -128,11 +129,13 @@ class TPatch:
             gsectors.append(sector)
 
             # for debugging
+            '''
             outputPath = 'C:/Tomosynthesis/localtest/res/'
             temp = np.zeros(self.pdata.shape,np.double)
             temp[:,:] = data[:,:]
             temp[mask] = 0
             tiffLib.imsave(outputPath + str(i) + 'sectors.tif',np.float32(temp))
+            '''
 
         return gsectors
 
@@ -231,8 +234,40 @@ class TPatch:
       
         return np.hstack((maxGring, angular_paccum, angular_paccum, grSpower))
 
+    def getSegmentFeats(self):
 
-        
+        ## preprocessing
+        eqimg = histEqualization.histEqualization(self.pdata, 16)
+        denoised = AT_denoising.DenoisingAW(eqimg)
+        denoised = AT_denoising.DenoisingAW(denoised)
+        imdata = AT_denoising.DenoisingAW(denoised)
+
+        #segmentation ceter towards outside
+        lsoutwards = acSeg.ac_outwards(imdata,visulization = False)
+
+        # compute features based on segmentation
+        outSegFeats = acSeg.getLabelImFeats(lsoutwards,center = (self.patch_center[0],self.patch_center[1]),orgim=imdata)
+    
+        return outSegFeats
+
+
+class TLightPatch:
+
+    def __init__ (self):
+        '''Initialization'''
+        self.pdata = None
+        self.image_center = None
+        self.patch_center = None
+        self.data_size = None   # actual size
+        self.patch_size = None
+        self.feats = None
+		
+        self.bagID = None
+        self.instanceID = None
+
+    def __repr__(self):
+        return 'TLightPatch' 
+
 
     
 

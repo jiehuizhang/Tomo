@@ -4,25 +4,8 @@
 
 import numpy as np
 class TImage:
-    
-    # original variable
-    dim = 0
-    size_0 = 0
-    size_1 = 0
-    size_2 = 1
-    data_type = None
-    data = []
-    sampled_data = []
-
-    # derived variables
-    patchesList = []
-    feats = []
-
-    predicts = []
  
     def __init__ (self, im = None):
-        '''Initialization'''
-        #self = im
 
         self.dim = 0
         self.size_0 = 0
@@ -36,6 +19,9 @@ class TImage:
         self.feats = []
 
         self.predicts = []
+
+    def __repr__(self):
+        return 'TImage(%r, %r, %r)' % (self.size_0, self.size_1, self.size_2)
 
     def setDim(self,dim):
         self.dim = dim
@@ -81,12 +67,11 @@ class TImage:
             
 class TImageSlice:
     
-    LightPatchList = []
-    predicts = None
-    feats = None
-
     def __init__ (self):
         
         self.LightPatchList = []
         self.predicts = None
         self.feats = None
+
+    def __repr__(self):
+        return 'TImageSlice(%r)' % (len(self.LightPatchList))

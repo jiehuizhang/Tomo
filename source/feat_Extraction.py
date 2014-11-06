@@ -1,11 +1,19 @@
-"""Extract Features"""
 import TPatch
 
-def patch_Extraction(im, poll, zslice, sampRate, patch_size, threshold = 16.4):
-    '''
-    threshold = 7.5(not nesseary optimal) if num_orientation = 4
-    threshold = 16.4 if num_orientation = 8
-    '''
+def patch_Extraction(im, poll, zslice, sampRate, patch_size, threshold = 11.7):
+    """
+    This function extracts region of interest from the original image 
+    based on the voting analysis result.
+
+    im:         original gray level image
+    poll:       voting result
+    zslice:     the slice index of the current image slice in the stack
+    sampRate:   sampling rate
+    patch_size: User defined ROI size
+    threshold:  threshold of voting score 
+                threshold = 7.5(not nesseary optimal) if num_orientation = 4
+                threshold = 16.4 if num_orientation = 8
+    """
     patches = []
 
     nrow = im.shape[0]

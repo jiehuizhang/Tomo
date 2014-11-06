@@ -5,23 +5,24 @@ import tiffLib
 
 class TMicroCal:
 
-    label = None
-    center = []
-    intensity = None
-    area = None
-    roi = None
-    global_id = None
-    global_flag = None
-
-    neighbours_2d = []
-    neighbour_dis_2d = []
-    density_2d = None
-    num_neighbours_2d = None
-
     def __init__ (self):
+
+        self.label = None
+        self.intensity = None
+        self.area = None
+        self.roi = None
+        self.global_id = None
+
+        self.neighbours_2d = []
+        self.neighbour_dis_2d = []
+        self.density_2d = None
+        self.num_neighbours_2d = None
+        
         self.center = np.zeros((3,), dtype=np.int)
         self.global_flag = False
-        '''Initialization'''
+
+    def __repr__(self):
+        return 'TMicroCal(%r, %r)' % (self.global_id, self.area)
 
     def computeDensity_2d(self):
         
@@ -31,16 +32,19 @@ class TMicroCal:
 
 class TMicroCal_3D:
 
-    global_id = None
-    center = None
-    intensity = None
-    volume = None
-
-    density = None
-    num_neighbours = None
-
     def __init__ (self):
-        '''Initialization'''
+
+        self.global_id = None
+        self.center = None
+        self.intensity = None
+        self.volume = None
+
+        self.density = None
+        self.num_neighbours = None
+
+    def __repr__(self):
+        return 'TMicroCal_3D(%r, %r)' % (self.global_id, self.volume)
+        
         
 
     

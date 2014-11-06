@@ -2,6 +2,8 @@
 
 import numpy as np
 from sklearn import svm
+from sklearn import tree
+from sklearn.naive_bayes import GaussianNB
 
 class classifier:
 
@@ -38,6 +40,7 @@ class classifier:
             self.data_train = data
             self.lab_train = label
 
+        # support vector machine
         if opt =='SVM':
             self.opt = 'SVM'
             '''self.prams = svm.SVC(C=0.7, kernel='rbf', degree=2, gamma=0.2,
@@ -49,12 +52,37 @@ class classifier:
                                  cache_size=200, verbose=False, max_iter=-1, random_state=None)
             self.prams.fit(self.data_train,self.lab_train)
 
+        # decision tree  
+        if opt =='DT':
+            self.opt = 'DT'           
+            self.prams = tree.DecisionTreeClassifier()
+            self.prams = self.prams.fit(self.data_train,self.lab_train)
+
+        # gaussian naive bayes
+        if opt =='GNB':
+
+            self.opt = 'GNB'
+            self.prams = GaussianNB()
+            self.prams.fit(self.data_train,self.lab_train)
+            
+
     def classify(self, data = None, label = None):
 
+        
         if data != None:
             self.data_test = data
             self.lab_test = label
+
+        # support vector machine
         if self.opt =='SVM':
+            self.predicts = self.prams.predict(self.data_test)
+
+        # decision tree
+        if self.opt =='DT':
+            self.predicts = self.prams.predict(self.data_test)
+
+        # gaussian naive bayes
+        if self.opt =='GNB':
             self.predicts = self.prams.predict(self.data_test)
 
     def split_data(self,data_projected,label):

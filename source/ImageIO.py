@@ -34,7 +34,7 @@ def imReader(path, fname, imformat, dim = 3):
         return readTiff(path + fname,dim)
     
 def readSMV(imfile,headerSize):
-    """ this function reads a smv file into a stack of raw images"""
+    """ this function reads a smv file into a stack of raw images """
 
     ## read header
     header = imfile.read(headerSize)

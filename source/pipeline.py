@@ -13,19 +13,20 @@ import AT_denoising
 def main():
 
     ## Please specify paths ##
-    data_path = '/home/yanbin/Tomosynthesis/preprocessed/tiffs/'
-    output_path = '/home/yanbin/Tomosynthesis/preprocessed/enhanced/'
+    data_path = '/home/yanbin/Tomosynthesis/data/SAP_test_datasets/Screening_30_cases/'
+    output_path = '/home/yanbin/Tomosynthesis/data/tiffs_3d/'
     exe_path= '/home/yanbin/Tomosynthesis/code/'
 
     ## Please specify Run Flags ##
-    FormatConvert = 0		
+    FormatConvert = 1		
     AWDenoising = 0
-    ContrastEnhancement = 1
+    ContrastEnhancement = 0
 
     ## Please specify parameters ##
-    dim = 2               # For format convert: save as 2d slices / 3d stack
+    dim = 3               # For format convert: save as 2d slices / 3d stack
     opt = 'asymptotic'    # For AWdenoising inverse transform options
-    block_m=5,block_n=5   # For AWdenoising Wiener filter window size block_m = block_n
+    block_m=5
+    block_n=5   # For AWdenoising Wiener filter window size block_m = block_n
 
     ###################### Avalability Check #######################
 

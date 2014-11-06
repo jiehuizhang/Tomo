@@ -15,6 +15,8 @@ shortest_path, heuristic_search, shortest_path_bellman_ford, maximum_flow, cut_t
 
 from pyentropy import DiscreteSystem
 import MI
+import Dimreduction
+import histEqualization
     
 def computeFeatureCorrelation(featSuspicious, featSource, featSink):
 
@@ -22,41 +24,49 @@ def computeFeatureCorrelation(featSuspicious, featSource, featSink):
     numSor = featSource.shape[0]
     numSin = featSink.shape[0]
 
+    dataCombo = np.vstack((featSource, featSink, featSuspicious))
+    
+    # dimensionality reduction 
+    n_components = 5
+    data_projected = Dimreduction.dim_Reduction(dataCombo, None, 'pca', n_components)
+
     # Normialize feature vectors
-    norm = normalize(featSource, featSink, featSuspicious)
+    norm = normalize(data_projected)
     featSource = norm[0:numSor,:]
     featSink = norm[numSor:numSor+numSin,:]
     featSuspicious = norm[numSor+numSin:numSor+numSin+numSus,:]
 
     # for debugging
-    outputPath = 'C:/Tomosynthesis/localtest/res/'   
-    np.savetxt(outputPath + 'norm.txt', norm, delimiter='\t')
+    #outputPath = 'C:/Tomosynthesis/localtest/res/'   
+    #np.savetxt(outputPath + 'norm.txt', norm, delimiter='\t')
     
     weightFeat = np.zeros((numSus + numSor + numSin,numSus + numSor + numSin),dtype=np.double)
+	
+    val_min = 0.0
+    val_max = np.sqrt(n_components)
 
     for i in range(numSor):
         for j in range(i,numSor):
-            weightFeat[i][j] = computeDis(featSource[i],featSource[j])
+            weightFeat[i][j] = val_min #computeDis(featSource[i],featSource[j])
         for j in range(numSin):
-            weightFeat[i][j+numSor] = computeDis(featSource[i],featSink[j])
+            weightFeat[i][j+numSor] = val_max #computeDis(featSource[i],featSink[j])
         for j in range(numSus):
             weightFeat[i][j+numSor+numSin] = computeDis(featSource[i],featSuspicious[j])
 
     for i in range(numSin):
         for j in range(i,numSin):
-            weightFeat[i+numSor][j+numSor] = computeDis(featSink[i],featSink[j])
+            weightFeat[i+numSor][j+numSor] = val_min #computeDis(featSink[i],featSink[j])
         for j in range(numSus):
             weightFeat[i+numSor][j+numSor+numSin] = computeDis(featSink[i],featSuspicious[j])
 
     for i in range(numSus):
         for j in range(i,numSus):
-            weightFeat[i+numSor+numSin][j+numSor+numSin] = computeDis(featSuspicious[i],featSuspicious[j])
+            weightFeat[i+numSor+numSin][j+numSor+numSin] = computeDis(featSuspicious[i],featSuspicious[j])			
         
     return weightFeat
 
-def normalize(featSource, featSink, featSuspicious):
+def normalize(comb):
 
-    comb = np.vstack((featSource, featSink, featSuspicious))
     cmax = np.amax(comb, axis=0)
     cmin = np.amin(comb, axis=0)
     norm = (comb - cmin)/(cmax - cmin)
@@ -110,11 +120,14 @@ def _MI(pdfs1, pdfs2):
     return np.sum(mi_map)
 
 
-def getPdf(data, center, numR = 10):
+def getPdf(data, center, numR = 10,eq = False):
+
+    # equalization before calculating of pdf
     
     pdfs = []
     bins = np.arange(0, 1, 0.05)
     for k in range(len(data)):
+        data[k] = histEqualization.histEqualization(data[k], 16)
         pdf = []
                
         r1 = 0
@@ -144,32 +157,33 @@ def getPdf(data, center, numR = 10):
 
     return pdfs
 
-
-
-    
+   
 def computeIntensityCorrelation(intenSuspicious, intenSource, intenSink, cenSuspicious, cenSource, cenSink):
 
     numSus = len(intenSuspicious)
     numSor = len(intenSource)
     numSin = len(intenSink)
 
-    pdfsource = getPdf(intenSource, cenSource)
-    pdfsink = getPdf(intenSink, cenSink)
-    pdfSuspicious = getPdf(intenSuspicious, cenSuspicious)
+    pdfsource = getPdf(intenSource, cenSource,eq = True)
+    pdfsink = getPdf(intenSink, cenSink,eq = True)
+    pdfSuspicious = getPdf(intenSuspicious, cenSuspicious,eq = False)
 
     weightIntens = np.zeros((numSus + numSor + numSin,numSus + numSor + numSin),dtype=np.double)
+	
+    val_min = 0.0
+    val_max = 10.0
 
     for i in range(numSor):
         for j in range(i,numSor):
-            weightIntens[i][j] = _MI(pdfsource[i],pdfsource[j])
+            weightIntens[i][j] = val_min #_MI(pdfsource[i],pdfsource[j])
         for j in range(numSin):
-            weightIntens[i][j+numSor] = _MI(pdfsource[i],pdfsink[j])
+            weightIntens[i][j+numSor] = val_max #_MI(pdfsource[i],pdfsink[j])
         for j in range(numSus):
             weightIntens[i][j+numSor+numSin] = _MI(pdfsource[i],pdfSuspicious[j])
 
     for i in range(numSin):
         for j in range(i,numSin):
-            weightIntens[i+numSor][j+numSor] = _MI(pdfsink[i],pdfsink[j])
+            weightIntens[i+numSor][j+numSor] = val_min #_MI(pdfsink[i],pdfsink[j])
         for j in range(numSus):
             weightIntens[i+numSor][j+numSor+numSin] = _MI(pdfsink[i],pdfSuspicious[j] )
 
@@ -177,6 +191,9 @@ def computeIntensityCorrelation(intenSuspicious, intenSource, intenSink, cenSusp
     for i in range(numSus):
         for j in range(i,numSus):
             weightIntens[i+numSor+numSin][j+numSor+numSin] = _MI(pdfSuspicious[i],pdfSuspicious[j])
+			
+	#outputPath = 'C:/Tomosynthesis/localtest/res/'   
+    #np.savetxt(outputPath + 'weightIntens.txt', weightIntens, delimiter='\t')
         
     return weightIntens
 
@@ -220,8 +237,9 @@ def computeSpatialCorrelation(coordSuspicious, numSor, numSin):
     return weightSpatial
 
 def computeSpaDis(coord_1,coord_2):
-
-    spaDis = np.sqrt((coord_1[0] - coord_2[0])**2 + (coord_1[1] - coord_2[1])**2 + (10*coord_1[2] - 10*coord_2[2])**2 )
+	
+    spatio = 5
+    spaDis = np.sqrt((coord_1[0] - coord_2[0])**2 + (coord_1[1] - coord_2[1])**2 + (spatio*coord_1[2] - spatio*coord_2[2])**2 )
 
     return spaDis
 
@@ -240,7 +258,7 @@ def computeWeight(sliceList, sourceSams, sinkSams, alpha, beta = 0.1):
 
     numNode = numSource + numSink + numSuspicious
 
-    ## prepare data for following process
+    ## prepare data for the following process
     numFeat = sliceList[0].feats.shape[1]
     # source data
     featSource = np.zeros((numSource,numFeat),np.double)
@@ -278,8 +296,11 @@ def computeWeight(sliceList, sourceSams, sinkSams, alpha, beta = 0.1):
             cenSuspicious.append(sliceList[i].LightPatchList[j].patch_center)
             
     outputPath = 'C:/Tomosynthesis/localtest/res/'
-    # compute feature correlation    
+    np.savetxt(outputPath + 'featSuspicious.txt', featSuspicious, delimiter='\t')
+    np.savetxt(outputPath + 'featSource.txt', featSource, delimiter='\t')
+    np.savetxt(outputPath + 'featSink.txt', featSink, delimiter='\t')
     
+	# compute feature correlation    
     weightFeat = computeFeatureCorrelation(featSuspicious, featSource, featSink)
     np.savetxt(outputPath + 'featcorrelation.txt', weightFeat, delimiter='\t')
     print 'done feature correlation'
@@ -296,7 +317,7 @@ def computeWeight(sliceList, sourceSams, sinkSams, alpha, beta = 0.1):
     print 'done intensity correlation'
 
     #regularized weight
-    weight = alpha*weightFeat# + beta*weightSpatial #+ weightInten
+    weight = alpha*weightFeat + beta*weightSpatial #+ weightInten
     weight = np.max(weight) - weight
     np.savetxt(outputPath + 'weight.txt', weight, delimiter='\t')
 
@@ -347,7 +368,7 @@ def classify(gr,numSource,numSink):
     return cuts
 
     
-def mainClassify(sliceList,sourceSams,sinkSams,alpha = 1,beta = 1):
+def mainClassify(sliceList,sourceSams,sinkSams,alpha = 1,beta = 0.2):
     
     numSource = len(sourceSams)
     numSink = len(sinkSams)

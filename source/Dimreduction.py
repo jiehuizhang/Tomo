@@ -23,14 +23,18 @@ def plot_embedding(X, y, title=None):
     if title is not None:
         plt.title(title)
         
-def dim_Reduction(data, label, opt, n_components=2, visualize = False):
+def dim_Reduction(data, label, opt, n_components, visualize = False):
 
     ## Preparing training data---------------
     X = data
     y = label   
 
-    n_samples, n_features = X.shape
+    n_samples = X.shape[0]    
     n_neighbors = 10
+
+    if n_samples == X.size:
+        print 'Only one data point'
+        return X[0:n_components]
     
     ## Random 2d projection---------------
     if opt == 'rand':

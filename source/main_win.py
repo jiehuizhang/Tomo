@@ -1,10 +1,17 @@
 import time
 from multiprocessing import Pool
+import gc
 
 import numpy as np
 import scipy.ndimage.filters as filters
 from pylab import *
 import pickle
+from skimage.filter import threshold_otsu
+from skimage.filter import threshold_adaptive
+from skimage.morphology import erosion, dilation, opening, closing, white_tophat
+from skimage.morphology import black_tophat, skeletonize, convex_hull_image
+from skimage.morphology import disk
+from scipy import ndimage
 
 import ImageIO
 import TImage
@@ -24,20 +31,79 @@ import mass3Dextraction as mass3d
 import Dimreduction
 import classification
 import graph_classification as grc
-
+import activeContourSegmentation as acSeg
+import morphsnakes
+import midt
+import PMHoughT
 
 
 if __name__ == '__main__':
 
+    gc.collect()
+
     ############################## single smv convert#######################
-    '''dataPath = '/home/TomosynthesisData/Cancer_25_cases/5092/'
+    '''
+    dataPath = '/home/TomosynthesisData/Cancer_25_cases/5092/'
     outputPath = '/home/yanbin/Tomosynthesis/data/5092/'
     fileName = '5092Recon08.smv_AutoCrop.smv'
     im = ImageIO.imReader(dataPath,fileName, 'smv')
-    ImageIO.imWriter(outputPath,'5092.tif',im,3)'''
+    ImageIO.imWriter(outputPath,'5092.tif',im,3)
+    '''
+
+    ##############################  Remove skin line #######################
+    '''
+    dataPath = 'C:/Tomosynthesis/localtest/'
+    outputPath = 'C:/Tomosynthesis/localtest/res/'
+    fileName = '5062fullrecon108-1_skin_remove.tif'
+    
+    im = ImageIO.imReader(dataPath,fileName, 'tif')
+    print (im.size_0,im.size_1,im.size_2)
+
+    selem = disk(15)
+    for i in range(im.size_2):
+
+        # skin-line remove
+        threshold = 8000
+        mask = im.data[i] > threshold
+        
+        sline = np.zeros(im.data[i].shape, int)
+        sline[mask] = 1
+        tiffLib.imsave(outputPath + str(i) + 'sline.tif',sline)
+        
+        dilated = ndimage.convolve(sline, selem, mode='constant', cval=0)
+        tiffLib.imsave(outputPath + str(i) + 'mask.tif',dilated)
+
+        mask = dilated > 0
+        im.data[i][mask] = 0
+        tiffLib.imsave(outputPath + str(i) + 'sr.tif',im.data[i])
+
+        # equalization
+        # eqimg = histEqualization.histEqualization(im.data[i], 16)
+        # tiffLib.imsave(outputPath + str(i) + 'eq.tif',eqimg)'
+    '''
+        
+
+    ##############################  Remove pectoral muscle #######################
+
+    '''
+    dataPath = 'C:/Tomosynthesis/localtest/res/5018/'
+    outputPath = 'C:/Tomosynthesis/localtest/res/5018/'
+    fileName = '48poll.tif'
+    
+    dataPath = 'C:/Tomosynthesis/localtest/res/5016/'
+    outputPath = 'C:/Tomosynthesis/localtest/res/5016/'
+    fileName = 'results31poll.tif'
+    
+    im = ImageIO.imReader(dataPath,fileName, 'tif',2)
+    print (im.size_0,im.size_1,im.size_2)
+    
+    PMHoughT.PMremove(im.data[0], visulization = True)
+    '''   
+    
 
     ################## single tiff slice preprocessing ########################
-    '''dataPath = 'C:/Tomosynthesis/localtest/'
+    '''
+    dataPath = 'C:/Tomosynthesis/localtest/'
     fileName = 'test-crop.tif'
     im = ImageIO.imReader(dataPath,fileName, 'tif',2)
 
@@ -55,11 +121,13 @@ if __name__ == '__main__':
 
     ## Denoised + Equalization
     de_eq = histEqualization.histEqualization(denoised, 16)
-    tiffLib.imsave(dataPath + 'test_de_eq.tif',de_eq)'''
+    tiffLib.imsave(dataPath + 'test_de_eq.tif',de_eq)
+    '''
 
     ############################ Gabor test #############################
     ## Gabor kernel test
-    '''dataPath = 'C:/Tomosynthesis/localtest/'
+    '''
+    dataPath = 'C:/Tomosynthesis/localtest/'
     outputPath = 'C:/Tomosynthesis/localtest/res/'
     fileName = '5016_test.tif'
     im = ImageIO.imReader(dataPath,fileName, 'tif',2)
@@ -72,10 +140,12 @@ if __name__ == '__main__':
 
     for i in range(len(kernels)):
         tiffLib.imsave(outputPath + str(i) + 'kernels.tif',np.float32(kernels[i]))
-        tiffLib.imsave(outputPath + str(i) + 'response.tif',np.float32(response[i]))'''
+        tiffLib.imsave(outputPath + str(i) + 'response.tif',np.float32(response[i]))
+    '''
 
     ## Gabor filter bank test
-    '''dataPath = 'C:/Tomosynthesis/localtest/'
+    '''
+    dataPath = 'C:/Tomosynthesis/localtest/'
     outputPath = 'C:/Tomosynthesis/localtest/res/'
     fileName = '7742_39-0026-2skeleton.tif'
     im = ImageIO.imReader(dataPath,fileName, 'tif',2)
@@ -92,7 +162,8 @@ if __name__ == '__main__':
         print i
         for j in range(len(filter_bank[i])):
             tiffLib.imsave(outputPath + str(i)+'_'+ str(j)+'_' + 'kernels.tif',np.float32(filter_bank[i][j]))
-            tiffLib.imsave(outputPath + str(i)+'_'+ str(j)+'_' + 'response.tif',np.float32(responses[i][j]))'''
+            tiffLib.imsave(outputPath + str(i)+'_'+ str(j)+'_' + 'response.tif',np.float32(responses[i][j]))
+    '''
     
 
     ## Gabor kernel response analysis test
@@ -134,7 +205,8 @@ if __name__ == '__main__':
             patches[i].getVarFeats()
             patches_feats = np.vstack((patches_feats,patches[i].dumpFeats()))
             
-        np.savetxt(outputPath + 'patches_feats.txt', patches_feats, delimiter='\t')  '''
+        np.savetxt(outputPath + 'patches_feats.txt', patches_feats, delimiter='\t')
+    '''
         
 
     ############################# Mass 3D Extraction ########################
@@ -147,7 +219,8 @@ if __name__ == '__main__':
     '''
     ############################ LOG test #############################
     # 2d test
-    '''dataPath = 'C:/Tomosynthesis/localtest/'
+    '''
+    dataPath = 'C:/Tomosynthesis/localtest/'
     outputPath = 'C:/Tomosynthesis/localtest/res/'
     #fileName = '5016EMML08_17.tif'
     fileName = 'MC_1_5092Recon08_16-1.tif'
@@ -162,10 +235,12 @@ if __name__ == '__main__':
 
     
     tiffLib.imsave(outputPath + 'log_constrained.tif',np.float32(constrained_log))
-    tiffLib.imsave(outputPath + 'log_tile.tif',np.float32(log))'''
+    tiffLib.imsave(outputPath + 'log_tile.tif',np.float32(log))
+    '''
 
     # 3d test
-    '''dataPath = 'C:/Tomosynthesis/localtest/'
+    '''
+    dataPath = 'C:/Tomosynthesis/localtest/'
     outputPath = 'C:/Tomosynthesis/localtest/res/5092/'
     fileName = '5092-2.tif'
     im = ImageIO.imReader(dataPath,fileName, 'tif',3)
@@ -189,10 +264,12 @@ if __name__ == '__main__':
     MC_List_3D = mc.MCs_constrain(gloabal_list)
 
     for item in MC_List_3D:
-        print(item.center, item.intensity, item.volume)'''
+        print(item.center, item.intensity, item.volume)
+    '''
     
     # 3d parallel test
-    '''dataPath = 'C:/Tomosynthesis/localtest/'
+    '''
+    dataPath = 'C:/Tomosynthesis/localtest/'
     outputPath = 'C:/Tomosynthesis/localtest/res/5092/'
     fileName = '5092-1.tif'
     im = ImageIO.imReader(dataPath,fileName, 'tif',3)
@@ -211,45 +288,8 @@ if __name__ == '__main__':
     MC_List_3D = mc.MCs_constrain(gloabal_list)
 
     for item in MC_List_3D:
-        print(item.center, item.intensity, item.volume)  '''
-
-    ############################ Creat Training Sample #############################
-    
-    dataPath = 'C:/Tomosynthesis/training/control_1/'
-    outputPath = 'C:/Tomosynthesis/localtest/res/'
-
-    
-    '''## intensity features 
-    int_feats = Creat_trainSam.creatTrainigSam(dataPath,opt = 'Int', iRnum = 8,iSnum = 24)
-    np.savetxt(outputPath + 'int_feats_cancer.txt', int_feats, delimiter='\t')
-    
-    
-    ## gradient features    
-    gr_feats = Creat_trainSam.creatTrainigSam(dataPath,opt = 'Grad')
-    np.savetxt(outputPath + 'gr_feats_cancer.txt', gr_feats, delimiter='\t')'''
-
-    ## all options
-    feats = Creat_trainSam.creatTrainigSam(dataPath,opt = 'all')
-    np.savetxt(outputPath + 'feats_control_1.txt', feats, delimiter='\t')
-
+        print(item.center, item.intensity, item.volume)
     '''
-    ## FD featues
-    FD_feats = Creat_trainSam.creatTrainigSam(dataPath,opt = 'FD')
-    np.savetxt(outputPath + 'FD_feats_cancer.txt', FD_feats, delimiter='\t')
-    
-
-
-    feats = np.hstack((rings_feats,FD_feats,hog_feats))
-    np.savetxt(outputPath + 'feats_cancer.txt', feats, delimiter='\t')    
-    
-    patchList = Creat_trainSam.creatTrainigSam(dataPath,opt = 'all')
-    # save the workspace
-    output = open(outputPath + 'cancer.pkl', 'wb')
-    pickle.dump(patchList, output)
-    output.close()
-    '''
-    
-
 
     ############################ HOG test #############################
     '''
@@ -330,7 +370,7 @@ if __name__ == '__main__':
     '''
     dataPath = 'C:/Tomosynthesis/localtest/res/'
     outputPath = 'C:/Tomosynthesis/localtest/res/'
-    control_name = 'feats_control.txt'
+    control_name = 'feats_control_1.txt'
     cancer_name = 'feats_cancer.txt'
 
     control = np.loadtxt(dataPath + control_name)
@@ -345,22 +385,62 @@ if __name__ == '__main__':
     accu = []
 
     for opt in optList:
-       
-        data_projected = Dimreduction.dim_Reduction(data, label, opt, n_components=2, visualize = True)
-        classifier = classification.classifier(data_projected,label)
-        classifier.train(opt ='SVM')
-        classifier.classify()
-    '''
 
+        data_projected = Dimreduction.dim_Reduction(data, label, opt, n_components=2, visualize = False)
+        classifier = classification.classifier(data_projected,label)
+        classifier.train(opt ='GNB')
+        classifier.classify()
+
+        print classifier.predicts
+    
+    '''
+    ############################ Creat Training Sample #############################
+    '''
+    dataPath = 'C:/Tomosynthesis/training/cancer/'
+    outputPath = 'C:/Tomosynthesis/localtest/res/'
+
+    
+    ## intensity features 
+    int_feats = Creat_trainSam.creatTrainigSam(dataPath,opt = 'Int', iRnum = 8,iSnum = 24)
+    np.savetxt(outputPath + 'int_feats_cancer.txt', int_feats, delimiter='\t')
+
+    ## FD featues
+    FD_feats = Creat_trainSam.creatTrainigSam(dataPath,opt = 'FD')
+    np.savetxt(outputPath + 'FD_feats_cancer.txt', FD_feats, delimiter='\t')
+    
+    ## gradient features    
+    gr_feats = Creat_trainSam.creatTrainigSam(dataPath,opt = 'Grad')
+    np.savetxt(outputPath + 'gr_feats_cancer.txt', gr_feats, delimiter='\t')
+
+    ## segment features
+    seg_feats = Creat_trainSam.creatTrainigSam(dataPath,opt = 'seg')
+    np.savetxt(outputPath + 'seg_feats_control_1.txt', seg_feats, delimiter='\t')
+
+    ## HOG features
+    feats = np.hstack((rings_feats,FD_feats,hog_feats))
+    np.savetxt(outputPath + 'feats_cancer.txt', feats, delimiter='\t')
+
+    ## all options
+    feats = Creat_trainSam.creatTrainigSam(dataPath,opt = 'all')
+    np.savetxt(outputPath + 'feats_cancer.txt', feats, delimiter='\t')
+    
+    
+    patchList = Creat_trainSam.creatTrainigSam(dataPath,opt = 'all') 
+  
+    #save the workspace
+    output = open(outputPath + 'cancer.pkl', 'wb')
+    pickle.dump(patchList, output)
+    output.close()
+    '''
     ############################# Mass 3D extraction ########################################
     '''
     # loading  
-    dataPath = 'C:/Tomosynthesis/localtest/'
-    im_name = '5110stack-1.tif'
+    dataPath = 'C:/Tomosynthesis/data/3d_tiffs/5016/'
+    im_name = '5016EMML08.tif'
     im = ImageIO.imReader(dataPath,im_name, 'tif',3)
     
     featPath = 'C:/Tomosynthesis/localtest/res/'
-    control_name = 'feats_control.txt'
+    control_name = 'feats_control_1.txt'
     cancer_name = 'feats_cancer.txt'
     control = np.loadtxt(featPath + control_name)
     cancer = np.loadtxt(featPath + cancer_name)
@@ -376,15 +456,18 @@ if __name__ == '__main__':
 
     # classifying
     
-    # in sequence
-    mass3d.Mass3dExtra(im,classifier)
-    print im.predicts
+    ############### in sequence
+    
+    #sliceList = mass3d.Mass3dExtra(im,classifier)
+    #print im.predicts
+   
     
     
-    # paralel
+    ################# paralel
+    
     start = time.clock()   
-    pool = Pool(processes=3)
-    params =[(i,im.data[i],classifier) for i in range(9)]
+    pool = Pool(processes=2)
+    params =[(i,im.data[i],classifier) for i in range(30,32)]
     #params =[(i,im.data[i],classifier) for i in range(im.size_2)]
     
     sliceList = []
@@ -393,23 +476,22 @@ if __name__ == '__main__':
     
     end = time.clock()
     print end - start
-
+    
     # save the workspace
-    output = open(featPath + 'workspace.pkl', 'wb')
+    output = open(featPath + 'suspicious.pkl', 'wb')
     pickle.dump(sliceList, output)
     output.close()
     
     
     # paralel using manger and proxy
-    mass3d.parallel_MassExtra_manager(im,classifier)
+    #mass3d.parallel_MassExtra_manager(im,classifier)
     '''
-       
 
-    ############################# Mass 3D extraction  Connecting########################################
+    ############################# Mass 3D extraction  Connecting ########################################
 
-    ''' 
+    '''
     path = 'C:/Tomosynthesis/localtest/res/'   
-    pkl_file = open(path + 'workspace.pkl', 'rb')
+    pkl_file = open(path + 'suspicious.pkl', 'rb')
     sliceList = pickle.load(pkl_file)
     pkl_file.close()
     print len(sliceList)
@@ -429,7 +511,7 @@ if __name__ == '__main__':
     path = 'C:/Tomosynthesis/localtest/res/'
  
     print 'loading data...'
-    sus_file = open(path + 'workspace.pkl', 'rb')
+    sus_file = open(path + 'suspicious.pkl', 'rb')
     sliceList = pickle.load(sus_file)
     sus_file.close()
     
@@ -437,7 +519,7 @@ if __name__ == '__main__':
     cancerList = pickle.load(cancer_file)
     cancer_file.close()
     
-    control_file = open(path + 'control.pkl', 'rb')
+    control_file = open(path + 'control_1.pkl', 'rb')
     controlList = pickle.load(control_file)
     control_file.close()
 
@@ -445,8 +527,95 @@ if __name__ == '__main__':
 
     print predicts
     '''
+
+    ############################# active contour segmentation #####################################
+    
+    '''
+    dataPath = 'C:/Tomosynthesis/localtest/'
+    fileName = 'cancer.tif'
+    outputPath = 'C:/Tomosynthesis/localtest/res/'
+
+    im = ImageIO.imReader(dataPath,fileName, 'tif',2)
+
+    #tiffLib.imsave(outputPath + 'image.tif',np.float32(im.data[0]))   #########
+
+    eqimg = histEqualization.histEqualization(im.data[0], 16)
+    denoised = AT_denoising.DenoisingAW(eqimg)
+    denoised = AT_denoising.DenoisingAW(denoised)
+    imdata = AT_denoising.DenoisingAW(denoised)
+    #tiffLib.imsave(outputPath + 'denoised.tif',np.float32(imdata))   #########
+
+    lsoutwards = acSeg.ac_outwards(imdata)
+
+    #tiffLib.imsave(outputPath + 'lsoutwards.tif',np.float32(lsoutwards))   #########
+
+    outSegFeats = acSeg.getLabelImFeats(lsoutwards,center = (im.data[0].shape[0]/2,im.data[0].shape[1]/2),orgim=imdata)
+    '''
+
+    ############################# RBST #####################################
+    '''
+    dataPath = 'C:/Tomosynthesis/localtest/res/'
+    fileName = 'lsoutwards.tif'
+    outputPath = 'C:/Tomosynthesis/localtest/res/'
+    labim = ImageIO.imReader(dataPath,fileName, 'tif',2)
+
+    dataPath = 'C:/Tomosynthesis/localtest/'
+    fileName = 'cancer.tif'
+    im = ImageIO.imReader(dataPath,fileName, 'tif',2)
+
+    acSeg.getRBSTim(labim.data[0],im.data[0])
+    '''
+
+    ############################# Multi instance decision trees #####################################
+    
+    dataPath = 'C:/Tomosynthesis/training/control_3d/'
+    outputPath = 'C:/Tomosynthesis/localtest/res/'
+
+    '''
+    LightPatchList = Creat_trainSam.creatTrainigSam_3D(dataPath)
+    output = open(outputPath + 'control_3d.pkl', 'wb')
+    pickle.dump(LightPatchList, output)
+    output.close()
     
     
+    
+    print 'loading data...'
+    sus_file = open(outputPath + 'suspicious.pkl', 'rb')
+    sliceList = pickle.load(sus_file)
+    sus_file.close()
+    
+    cancer_file = open(outputPath + 'cancer.pkl', 'rb')
+    cancerList = pickle.load(cancer_file)
+    cancer_file.close()
+    
+    control_file = open(outputPath + 'control_3d.pkl', 'rb')
+    controlList = pickle.load(control_file)
+
+    print 'classifying ...'
+    midt.classify(sliceList, cancerList, controlList)
+    '''
+    
+    
+    dataPath = 'C:/Tomosynthesis/localtest/res/'
+
+    imname = '5016EMML08-1.tif'
+    m1name = '69dialated-1.tif'
+    m2name = '68dialated-1.tif'
+
+    im = ImageIO.imReader(dataPath,imname, 'tif',2)
+    di1 = ImageIO.imReader(dataPath,m1name, 'tif',2)
+    di2 = ImageIO.imReader(dataPath,m2name, 'tif',2)
+
+    mask1 = di1.data[0] > 0
+    mask2 = di2.data[0] > 0
+
+    im.data[0][mask1] = 0
+    im.data[0][mask2] = 0
+
+    tiffLib.imsave(dataPath + 'liares.tif',np.float32(im.data[0]))
+
+
+
     
         
 

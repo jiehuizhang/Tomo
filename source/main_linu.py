@@ -1,5 +1,6 @@
 import time
 from multiprocessing import Pool
+import gc
 
 import numpy as np
 import scipy.ndimage.filters as filters
@@ -23,6 +24,9 @@ import Creat_trainSam
 import mass3Dextraction as mass3d
 import Dimreduction
 import classification
+import graph_classification as grc
+import activeContourSegmentation as acSeg
+import morphsnakes
 
 def f(x,y):
     z = math.factorial(200)
@@ -34,12 +38,14 @@ def f_wrapper(args):
 
 if __name__ == '__main__':
 
-    ############################## single smv convert#######################
-    '''dataPath = '/home/TomosynthesisData/Cancer_25_cases/5092/'
+    ############################## single smv convert #######################
+    '''
+    dataPath = '/home/TomosynthesisData/Cancer_25_cases/5092/'
     outputPath = '/home/yanbin/Tomosynthesis/data/5092/'
     fileName = '5092Recon08.smv_AutoCrop.smv'
     im = ImageIO.imReader(dataPath,fileName, 'smv')
-    ImageIO.imWriter(outputPath,'5092.tif',im,3)'''
+    ImageIO.imWriter(outputPath,'5092.tif',im,3)
+    '''
 
     ################## single tiff slice preprocessing ########################
     '''dataPath = 'C:/Tomosynthesis/localtest/'
@@ -154,7 +160,7 @@ if __name__ == '__main__':
         for i in range(len(patches)):
             tiffLib.imsave(outputPath + str(i) + 'patches.tif',np.float32(patches[i].pdata))'''
 
-    ############################# Mass 3D Extraction ########################
+    ############################# Mass 3D Extraction sequentialy ########################
     '''
     dataPath = 'C:/Tomosynthesis/localtest/'
     fileName = 'test-crop.tif' 
@@ -355,37 +361,37 @@ if __name__ == '__main__':
     '''
 
     ############################# Mass 3D extraction ########################################
+      
+    dataPath = '/home/yanbin/Tomosynthesis/data/tiffs_3d/5016/'
+    paraPath = '/home/yanbin/localtest/'
+    outputPath = '/home/yanbin/Tomosynthesis/results/5016/'
+    im_name = '5016EMML08.tif'
     
-    # loading  
-    dataPath = '/home/yanbin/localtest/'
-    im_name = '5110stack.tif'
+
+    # loading 
     im = ImageIO.imReader(dataPath,im_name, 'tif',3)
+    print (im.size_0,im.size_1,im.size_2)
     
-    featPath = 'C:/Tomosynthesis/localtest/res/'
-    control_name = 'feats_control.txt'
+    control_name = 'feats_control_1.txt'
     cancer_name = 'feats_cancer.txt'
-    control = np.loadtxt(dataPath + control_name)
-    cancer = np.loadtxt(dataPath + cancer_name)
+    control = np.loadtxt(paraPath + control_name)
+    cancer = np.loadtxt(paraPath + cancer_name)
 
     # training
     data = np.vstack((control,cancer))
     label = np.zeros((control.shape[0] + cancer.shape[0],),np.int)
-    label[0:control.shape[0]-1] = 1
+    label[0:control.shape[0]] = 1
     
-    data_projected = Dimreduction.dim_Reduction(data, label, opt='randtree', n_components=2, visualize = False)
+    data_projected = Dimreduction.dim_Reduction(data, label, opt='randtree', n_components=5, visualize = False)
     classifier = classification.classifier(data_projected,label)
     classifier.train(opt ='SVM')
 
-    # classifying
-    # in sequence
-    #mass3d.Mass3dExtra(im,classifier)
-    #print im.predicts
 
     # paralel
     start = time.clock()   
     pool = Pool(processes=6)
-    #params =[(i,im.data[i],classifier) for i in range(9)]
-    params =[(i,im.data[i],classifier) for i in range(im.size_2)]
+    #params =[(i,im.data[i],classifier) for i in range(im.size_2)]
+    params =[(i,im.data[i],classifier) for i in range(65,69)]
     
     sliceList = []   
     sliceList = pool.map(mass3d.parallelWrapper,params)
@@ -394,12 +400,12 @@ if __name__ == '__main__':
     print end - start
 
     # save the workspace
-    output = open(dataPath + 'workspace.pkl', 'wb')
+    output = open(outputPath + '5016.pkl', 'wb')
     pickle.dump(sliceList, output)
     output.close()
     
 
-    ############################# Mass 3D extraction  Connecting########################################
+    ############################# Mass 3D extraction  Connecting ########################################
     '''
     featPath = 'C:/Tomosynthesis/localtest/res/'   
     pkl_file = open(path + 'workspace.pkl', 'rb')

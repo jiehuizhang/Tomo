@@ -1,9 +1,16 @@
-""" Classification and Analysis of Gabor Responses """
+"""
+This file includes functions that analyzing the filtering responses.
+Specifically, creating batch response, taking the voting procedure,etc.
+"""
 
 import numpy as np
 import sklearn.preprocessing
 
 def dump_vector(response):
+    """
+    This function reorgazies the responses derived from the same kernel set
+    into an numpy array. (For debugging use only)
+    """
     
     shape = response[0].shape
     response_var = np.zeros(shape, dtype=np.double)
@@ -17,7 +24,15 @@ def dump_vector(response):
     return response_var
 
 def cerat_batch_response(response,sampRate,winSize):
-
+    """
+    This function creats the batch response matrix in which each element
+    is the mean value of a neighbour area from the corresponding response
+    matrix
+    response:    Input response matrix
+    sampRate:    Sampling rate ()
+    winSize:    Size of the neighbourhood   
+    """
+    
     numResp = len(response)
     shape = response[0].shape
     nrow = shape[0]
@@ -45,6 +60,14 @@ def cerat_batch_response(response,sampRate,winSize):
     return (batchResp, integratedResp)
 
 def integrating_poll(response,sampRate,winSize,shape):
+    """
+    This function reverse the sampling proceduring after the
+    voting result is derived
+    
+    response:     Input voting result
+    sampRate:     sampling rate
+    winSize:      neighbourhood size
+    """
 
     nrow = shape[0]
     ncol = shape[1]
@@ -65,29 +88,38 @@ def integrating_poll(response,sampRate,winSize,shape):
 
 
 def getCDF(temp_response):
+    """
+    This function calculates voting score of response magnitude.
+    The score is calculated as the rank of sorted magnitude.
+
+    temp_response:   Input batch response matrix
+    """
     
     shape = temp_response.shape
     nrow = shape[0]
     ncol = shape[1]
     len_hist = nrow*ncol
-    resp_arr = temp_response.reshape((1,len_hist))
+    resp_arr = temp_response.reshape((len_hist,))
     sorted_arr = np.sort(resp_arr)
     
     cdf = np.zeros(shape, dtype=np.double)
     for r in range(nrow):
         for c in range(ncol):
-            for i in range(len_hist):
-                if sorted_arr[0,i] == temp_response[r,c]:
-                    cdf[r,c] = np.double(i)/np.double(len_hist)
-                    break
-    
+            index = np.where(sorted_arr==temp_response[r,c])
+            cdf[r,c] = np.double(index[0][0])/np.double(len_hist)
+   
     return cdf
 
 def getODF(response, threshold = 0.1):
-    '''
+    """
+    This function calculate the orientation voting score.
+    The score in each orientation is set to 1 if it is above the
+    percentage threshold, other wise set to zero
+    
+    response: Input batch response
     threshold = 0.2 for num_orientation = 4
     threshold = 0.1 for num_orientation = 8
-    '''
+    """
     shape = response[0].shape
     numResp = len(response)
     epsilon=0.00001
@@ -110,10 +142,17 @@ def getODF(response, threshold = 0.1):
     return odf
     
 def vote(response,alpha = 1.1):
-    '''
-    alpha = 1.1 for num_orientation = 4
-    alpha = 0.55 for num_orientation = 8
-    '''
+    """
+    This function procedes the voting procedure.
+    Magnitude score are calculated in function getCDF
+    Orientation score are calculated in function getODF
+    
+    response:  Input of batch response
+    alpha:     weight of orientation score
+               alpha = 1.1 for num_orientation = 4
+               alpha = 0.55 for num_orientation = 8
+    """
+    
     numResp = len(response)
     shape = response[0].shape
     nrow = shape[0]
@@ -127,14 +166,13 @@ def vote(response,alpha = 1.1):
         
     poll_intensity = np.zeros(shape, dtype=np.double)
     poll_orientation = np.zeros(shape, dtype=np.double)
-    for r in range(nrow):
-        for c in range(ncol):
-            for k in range(numResp):
-                # calculate intensity score
-                poll_intensity[r,c] = poll_intensity[r,c] + cdf[k][r,c]
 
-                # calculate orientation score
-                poll_orientation[r,c] = poll_orientation[r,c] + odf[k][r,c]
+    for k in range(numResp):
+        # calculate intensity score
+        poll_intensity = poll_intensity + cdf[k]
+
+        # calculate orientation score
+        poll_orientation = poll_orientation + odf[k]
 
     return alpha*poll_orientation + poll_intensity
 
