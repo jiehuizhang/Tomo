@@ -12,6 +12,8 @@ from skimage.morphology import erosion, dilation, opening, closing, white_tophat
 from skimage.morphology import black_tophat, skeletonize, convex_hull_image
 from skimage.morphology import disk
 from scipy import ndimage
+from skimage.filter import roberts, sobel
+import cv2.cv as cv
 
 import ImageIO
 import TImage
@@ -35,6 +37,10 @@ import activeContourSegmentation as acSeg
 import morphsnakes
 import midt
 import PMHoughT
+import TPSpline
+import registration
+import TPS_wrapper
+import regionCompairision as rC
 
 
 if __name__ == '__main__':
@@ -594,25 +600,110 @@ if __name__ == '__main__':
     print 'classifying ...'
     midt.classify(sliceList, cancerList, controlList)
     '''
+
+    ############################# TPSpline test #####################################
+    '''
+    dataPath = 'C:/Tomosynthesis/localtest/reg/'
+    outputPath = 'C:/Tomosynthesis/localtest/reg/'
+
+    fileName_r = '6044_r.tif'
+    fileName_l = '6044_l.tif'
     
+    im_r = ImageIO.imReader(dataPath,fileName_r, 'tif',2)
+    im_l = ImageIO.imReader(dataPath,fileName_l, 'tif',2)
+    src = im_r.data[0]
+
+    # source point
+    pS = []
+    pS.append((1,1))
+    pS.append((1,710))
+
+    pS.append((645,1))
+    pS.append((645,750))
+
+    pS.append((1239,1))
+    pS.append((1239,1068))
+
+    pS.append((1644,3))
+    pS.append((1848,1050))
+
+    pS.append((2050,90))
+    pS.append((2103,576))
+
+
+    # dst point
+    pD = []
+    pD.append((1,1))
+    pD.append((1,510))
+
+    pD.append((675,1))
+    pD.append((675,690))
+
+    pD.append((1329,1))
+    pD.append((1329,1140))
+
+    pD.append((1674,1))
+    pD.append((1929,1125))
+
+    pD.append((2232,153))
+    pD.append((2220,708))
+
+
+    tps = TPSpline.TPSpline()
+    tps.setCorrespondences(pS, pD)
+    dst = tps.warpImage(src)
+
+    tiffLib.imsave(outputPath + 'dst.tif',np.float32(dst))
+    '''
+
+    ############################# registration test #####################################
+    '''
+    dataPath = 'C:/Tomosynthesis/localtest/reg/'
+    outputPath = 'C:/Tomosynthesis/localtest/reg/'
+
+    fileName_r = '6044_r.tif'
+    fileName_l = '6044_l.tif'
     
-    dataPath = 'C:/Tomosynthesis/localtest/res/'
+    im_r = ImageIO.imReader(dataPath,fileName_r, 'tif',2)
+    im_l = ImageIO.imReader(dataPath,fileName_l, 'tif',2)
+    gc.disable()
+    warped_im1,d1, d2 = registration.registration(im_r.data[0], im_l.data[0], 15,'c')
 
-    imname = '5016EMML08-1.tif'
-    m1name = '69dialated-1.tif'
-    m2name = '68dialated-1.tif'
+    tiffLib.imsave(outputPath + 'warped_im1.tif',np.float32(warped_im1))
+    tiffLib.imsave(outputPath + 'd1.tif',np.float32(d1))
+    tiffLib.imsave(outputPath + 'd2.tif',np.float32(d2))
+    '''
 
-    im = ImageIO.imReader(dataPath,imname, 'tif',2)
-    di1 = ImageIO.imReader(dataPath,m1name, 'tif',2)
-    di2 = ImageIO.imReader(dataPath,m2name, 'tif',2)
+    ############################# comparision test #####################################
+    
+    dataPath = 'C:/Tomosynthesis/localtest/reg/'
+    outputPath = 'C:/Tomosynthesis/localtest/reg/'
 
-    mask1 = di1.data[0] > 0
-    mask2 = di2.data[0] > 0
+    fileName_r = 'op.tif'
+    fileName_l = '6044_l.tif'
 
-    im.data[0][mask1] = 0
-    im.data[0][mask2] = 0
+    im_r = ImageIO.imReader(dataPath,fileName_r, 'tif',2)
+    im_l = ImageIO.imReader(dataPath,fileName_l, 'tif',2)
 
-    tiffLib.imsave(dataPath + 'liares.tif',np.float32(im.data[0]))
+    params = []
+    params.append(('1d', 'cv_comp', cv.CV_COMP_CORREL))
+    params.append(('1d', 'scipy_comp', 'Euclidean'))
+    params.append(('1d', 'scipy_comp', 'Manhattan'))
+    params.append(('1d', 'kl_div', 'None'))
+
+    params.append(('2d', cv.CV_TM_SQDIFF_NORMED, 'None'))
+    params.append(('2d', cv.CV_TM_CCORR_NORMED, 'None'))
+    params.append(('2d', cv.CV_TM_CCOEFF_NORMED, 'None'))
+
+    params.append(('decomp', 'eigen', 'None'))
+    params.append(('decomp', 'NMF', 'None'))
+
+
+    for i in range(len(params)):
+        print i
+        dis_im = rC.imageComp(im_r.data[0],im_l.data[0], params[i], region_s = 200, olap_s = 200)   
+        tiffLib.imsave(outputPath + str(i) + '.tif' ,np.float32(dis_im) )
+    
 
 
 
