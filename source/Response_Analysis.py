@@ -1,5 +1,4 @@
-"""
-This file includes functions that analyzing the filtering responses.
+"""This file includes functions that analyzing the filtering responses.
 Specifically, creating batch response, taking the voting procedure,etc.
 """
 
@@ -24,13 +23,17 @@ def dump_vector(response):
     return response_var
 
 def cerat_batch_response(response,sampRate,winSize):
-    """
-    This function creats the batch response matrix in which each element
-    is the mean value of a neighbour area from the corresponding response
-    matrix
-    response:    Input response matrix
-    sampRate:    Sampling rate ()
-    winSize:    Size of the neighbourhood   
+    """This function creats the batch response matrix in which each element
+    is the mean value of a neighbour area from the corresponding response matrix
+
+    Parameters
+    ----------
+    response: numpy array
+        Input response matrix
+    sampRate: integer
+        Sampling rate
+    winSize: integer
+        Size of the neighbourhood   
     """
     
     numResp = len(response)
@@ -63,10 +66,16 @@ def integrating_poll(response,sampRate,winSize,shape):
     """
     This function reverse the sampling proceduring after the
     voting result is derived
+
+    Parameters
+    ----------
     
-    response:     Input voting result
-    sampRate:     sampling rate
-    winSize:      neighbourhood size
+    response: numpy_array
+        Input voting result
+    sampRate: integer
+        sampling rate
+    winSize: integer
+        neighbourhood size
     """
 
     nrow = shape[0]
@@ -92,7 +101,10 @@ def getCDF(temp_response):
     This function calculates voting score of response magnitude.
     The score is calculated as the rank of sorted magnitude.
 
-    temp_response:   Input batch response matrix
+    Parameters
+    ----------
+    temp_response: numpy array
+        Input batch response matrix
     """
     
     shape = temp_response.shape
@@ -115,10 +127,15 @@ def getODF(response, threshold = 0.1):
     This function calculate the orientation voting score.
     The score in each orientation is set to 1 if it is above the
     percentage threshold, other wise set to zero
-    
-    response: Input batch response
-    threshold = 0.2 for num_orientation = 4
-    threshold = 0.1 for num_orientation = 8
+
+    Parameters
+    ----------  
+    response: numpy array (2D)
+        Input batch response
+    threshold = 0.2
+        for num_orientation = 4
+    threshold = 0.1
+        for num_orientation = 8
     """
     shape = response[0].shape
     numResp = len(response)
@@ -146,11 +163,15 @@ def vote(response,alpha = 1.1):
     This function procedes the voting procedure.
     Magnitude score are calculated in function getCDF
     Orientation score are calculated in function getODF
-    
-    response:  Input of batch response
-    alpha:     weight of orientation score
-               alpha = 1.1 for num_orientation = 4
-               alpha = 0.55 for num_orientation = 8
+
+    Parameters
+    ----------   
+    response:
+        Input of batch response
+    alpha:
+        weight of orientation score
+        alpha = 1.1 for num_orientation = 4
+        alpha = 0.55 for num_orientation = 8
     """
     
     numResp = len(response)

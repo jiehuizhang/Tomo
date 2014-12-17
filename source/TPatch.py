@@ -1,4 +1,4 @@
-"""The class for image patch"""
+
 
 import numpy as np
 from numpy import linalg as LA
@@ -17,9 +17,32 @@ import activeContourSegmentation as acSeg
 import morphsnakes
 
 class TPatch:
+    """Image patch class. (A region of interest)
+
+    Variables
+    ----------
+    pdata: 2D numpy array
+        The patch data
+    image_center: a tuple of two intergers
+        The (x,y) coordinate in the oroginal image
+    patch_center: a tuple of two intergers
+        The (x,y) coordinate of the center of the patch
+    data_size: a tuple of two intergers
+        The shape of hte data array
+    patch_size: integer
+        The radius of the patch
+
+    bagID: interger
+        Used in the multi-instance learning classification.
+        The ID of the training sample
+    instanceID: interger
+        Used in the multi-instance learning classification.
+        The ID asigned by the classifier
+   
+    """
 
     def __init__ (self):
-        '''Initialization'''
+        """Initialization function"""
         self.pdata = None
         self.image_center = None
         self.patch_center = None
@@ -33,10 +56,17 @@ class TPatch:
         self.instanceID = None
 
     def __repr__(self):
+        """__repr__ function"""
         return 'TPatch' 
 
     def initialize(self,imdata):
-        '''Initialization with imagedata'''
+        """Initialization with imdata
+
+        Parameters
+        ----------
+        imdata : numpy array
+            Initilial data array.
+        """
         self.pdata = imdata
         self.data_size = imdata.shape
         
@@ -44,7 +74,13 @@ class TPatch:
         self.patch_size = max(imdata.shape[0],imdata.shape[1])/2
 
     def downSampling(self,rate = 2):
-        
+        """Down sampling the image patch by given sample rate
+
+        Parameters
+        ----------
+        rate : integer
+            The sample rate.
+        """        
         rows = np.array(range(0,self.data_size[0],rate))
         cols = np.array(range(0,self.data_size[1],rate))
 
@@ -53,6 +89,22 @@ class TPatch:
 
 
     def getRings(self,data, numrings, dr_ini,r_ini = 0,delta_dr = 2):
+        """Devide the image patch into a number of rings 
+
+        Parameters
+        ----------
+        data : numpy array
+            The patch data.
+        numrings : integer
+            The number of rings desired
+        dr_ini : integer
+            The initial delt value for radius increasment
+        r_ini: integer
+            The initial radious value
+        delta_dr: integer
+            The increase step of delt value  
+        
+        """        
 
         nr,nc = self.data_size
         X, Y = np.ogrid[0:nr-1, 0:nc-1]
@@ -87,6 +139,16 @@ class TPatch:
         return rings
 
     def getSectors(self,data, numsects):
+        """Devide the image patch into a number of angular sectors 
+
+        Parameters
+        ----------
+        data : numpy array
+            The patch data.
+        numrings : integer
+            The number of sectors desired
+        
+        """ 
 
         dangle = 360/numsects
 
@@ -128,18 +190,18 @@ class TPatch:
             angle1 = angle1 + dangle
             gsectors.append(sector)
 
-            # for debugging
-            '''
-            outputPath = 'C:/Tomosynthesis/localtest/res/'
-            temp = np.zeros(self.pdata.shape,np.double)
-            temp[:,:] = data[:,:]
-            temp[mask] = 0
-            tiffLib.imsave(outputPath + str(i) + 'sectors.tif',np.float32(temp))
-            '''
 
         return gsectors
 
     def computeGradient(self, threshold = 1500):
+        """Compute the gradient of the image patch 
+
+        Parameters
+        ----------
+        threshold : integer
+            Gradient magnitude below this value are set to be 0.
+        
+        """ 
         
         gx = np.zeros(self.data_size,dtype=np.double)
         gy = np.zeros(self.data_size,dtype=np.double)
@@ -151,8 +213,17 @@ class TPatch:
         self.gmagnitude[mask] = 0
 
     def getIntenfeats(self, int_Rnum, int_Snum):
+        """Compute intensity features of the image patch 
 
-        ''' intensity ring feats'''
+        Parameters
+        ----------
+        int_Rnum : integer
+            The number of rings to be divided into.
+        int_Rnum : integer
+            The number of sectors to be divided into.
+            
+        """
+
         int_rings = self.getRings( self.pdata, int_Rnum, dr_ini = 5,r_ini = 15,delta_dr = 2)
         
         #### calculate mean
@@ -200,6 +271,16 @@ class TPatch:
         return  np.hstack((intMLinear, var_mIntRing, angular_pdiff, int_power))
 
     def getGradfeats(self, gr_Rnum, gr_Snum):
+        """Compute gradient features of the image patch 
+
+        Parameters
+        ----------
+        gr_Rnum : integer
+            The number of rings to be divided into.
+        gr_Snum : integer
+            The number of sectors to be divided into.
+            
+        """
 
         ## gradient ring feats         ##################
         self.computeGradient(threshold = 2500)
@@ -235,6 +316,7 @@ class TPatch:
         return np.hstack((maxGring, angular_paccum, angular_paccum, grSpower))
 
     def getSegmentFeats(self):
+        """Compute gradient features of the image patch """
 
         ## preprocessing
         eqimg = histEqualization.histEqualization(self.pdata, 16)
@@ -252,9 +334,9 @@ class TPatch:
 
 
 class TLightPatch:
+    """Light class of TPatch includes only class variables """
 
     def __init__ (self):
-        '''Initialization'''
         self.pdata = None
         self.image_center = None
         self.patch_center = None

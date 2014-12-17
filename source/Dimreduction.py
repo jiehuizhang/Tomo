@@ -1,4 +1,4 @@
-'''Conduct Dimensionality Reduction'''
+
 
 from time import time
 
@@ -24,6 +24,22 @@ def plot_embedding(X, y, title=None):
         plt.title(title)
         
 def dim_Reduction(data, label, opt, n_components, visualize = False):
+    """Dimensionality Reduction
+
+    Parameters
+    ----------
+    data:
+        Feature table
+    label:
+        Class label of each data point (can be assigned randomly if not available)
+    opt:
+        Options for dimension reduction methods
+    n_components:
+        Number of components needed
+    visualize:
+        Visualize or not the dimension reduction result
+    
+    """
 
     ## Preparing training data---------------
     X = data

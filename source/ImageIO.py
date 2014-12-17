@@ -1,4 +1,4 @@
-"""imageIO defines function for reading and writing images in different format"""
+"""Read and write 2-D/3-D images of variaty formats"""
 
 import os
 from PIL import Image
@@ -8,10 +8,27 @@ from scipy import misc
 import tiffLib
 
 def imReader(path, fname, imformat, dim = 3):
-    """ this function has three input arguments:
-        path:      the path of the image to be read
-        name:      the name of the image to be read(including extension)
-        imformat:  the format of the image"""
+    """ Read 2D/3D image data to the TImage class.
+
+    Parameters
+    ----------
+    path: str
+        The path of the image file
+    fname: str
+        The name of the image file including extension
+    imformat: etr
+        The format of the image file ('smv' or 'tif' are supported)
+    dim = 3: integer
+        The dimension of the image, 3-D as default
+
+    Examples
+    --------
+    >>> import ImageIO
+    >>> dataPath = 'C:/Tomosynthesis/localtest/'
+    >>> fileName = 'test-crop.tif'
+    >>> im = ImageIO.imReader(dataPath,fileName, 'tif',3)
+
+    """
           
     # check file existence
     if not os.path.isdir(path):
@@ -34,7 +51,16 @@ def imReader(path, fname, imformat, dim = 3):
         return readTiff(path + fname,dim)
     
 def readSMV(imfile,headerSize):
-    """ this function reads a smv file into a stack of raw images """
+    """ Read smv file from buffer
+
+    Parameters
+    ----------
+    imfile:
+        An openned image file
+    headerSize: integer
+        The size of the header
+    
+    """
 
     ## read header
     header = imfile.read(headerSize)
@@ -92,6 +118,16 @@ def readSMV(imfile,headerSize):
     return smvIm
 
 def readTiff(fname,dim):
+    """ Read tif file from buffer
+
+    Parameters
+    ----------
+    imfile:
+        An openned image file
+    dim: integer
+        The dimension of the image
+    
+    """
     
     tifIm = TImage.TImage();
     tifIm.setDim(dim)
@@ -117,11 +153,29 @@ def readTiff(fname,dim):
     return tifIm
         
 def imWriter(path, fname, im, dim = 3):
-    """ this function has four input arguments:
-        path:      the path of the image to be write
-        name:      the name of the image to be write (including extension)
-        im:        actual image object to be write
-        dim:       output image dimensionality"""
+    """ Write TImage class as a tiff image(stack):
+
+    Parameters
+    ----------
+    path: str
+        The path of the image to be write
+    name: str
+        The name of the image to be write (including extension)
+    im: TImage
+        TImage class  to be write
+    dim: integer
+        The output image dimensionality
+
+    Examples
+    --------
+    >>> import ImageIO
+    >>> dataPath = 'C:/Tomosynthesis/localtest/'
+    >>> outputPath = 'C:/Tomosynthesis/localtest/'
+    >>> fileName = 'test-crop.tif'
+    >>> im = ImageIO.imReader(dataPath,fileName, 'tif',3)
+    >>> ImageIO.imWriter(outputPath,'test.tif',im,3)
+
+    """
 
     # check file existence
     if not os.path.isdir(path):

@@ -1,4 +1,4 @@
-'''Conduct Classification'''
+"""Binary Classification"""
 
 import numpy as np
 from sklearn import svm
@@ -6,6 +6,8 @@ from sklearn import tree
 from sklearn.naive_bayes import GaussianNB
 
 class classifier:
+    """The testing classifier class. Accept labeled data set, splitting data into
+    training and testing data. Compute the estimation and acuuracy."""
 
     data_train = None
     data_test = None
@@ -19,6 +21,7 @@ class classifier:
     accuracy = None
 
     def __init__ (self,data_in=None,lab_in=None):
+        """Initialization function"""
 
         self.data_train = None
         self.data_test = None
@@ -35,6 +38,19 @@ class classifier:
             self.split_data(data_in,lab_in)
         
     def train(self, opt, data = None, label = None):
+        """Training classifiier with given option
+
+        Parameters
+        ----------
+        opt: str
+            Option for classification algorithm choosed
+            ('SVM', 'DT', 'GNB')
+        data: numpy array(2D)
+            The training feature table if not initialized
+        data: numpy array(1D)
+            The training data label if not initialized
+
+        """
 
         if data != None:
             self.data_train = data
@@ -68,7 +84,6 @@ class classifier:
 
     def classify(self, data = None, label = None):
 
-        
         if data != None:
             self.data_test = data
             self.lab_test = label
@@ -86,6 +101,7 @@ class classifier:
             self.predicts = self.prams.predict(self.data_test)
 
     def split_data(self,data_projected,label):
+
 
         lab_cla_1 = np.where(label == 0)[0]
         num_cla_1 = lab_cla_1.shape[0] 

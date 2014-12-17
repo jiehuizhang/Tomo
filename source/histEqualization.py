@@ -1,8 +1,27 @@
-'''This module perform the histogram equalization algorithm to enhance the consrast of images'''
+
 import numpy as np
 import math
 
 def histEqualization(imdata, depth = 16):
+    """Contrast enhancement by histogram equalization.
+
+    Parameters
+    ----------
+    imdata: numpy array
+        The input image array
+    depth: integer
+        Bit number of image. (8/16/32)
+
+    Examples
+    --------
+    >>> import ImageIO
+    >>> import histEqualization
+    >>> dataPath = 'C:/Tomosynthesis/localtest/'
+    >>> fileName = 'test-crop.tif'
+    >>> im = ImageIO.imReader(dataPath,fileName, 'tif',2)
+    >>> eqimg = histEqualization.histEqualization(im.data[0], 16)
+
+    """
 
     shape = imdata.shape
     width = shape[1]

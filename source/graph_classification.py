@@ -1,4 +1,4 @@
-""" Build Graphs based on ROI """
+""" Binaray classification using graphcut """
 import time
 import numpy as np
 import cmath
@@ -19,6 +19,18 @@ import Dimreduction
 import histEqualization
     
 def computeFeatureCorrelation(featSuspicious, featSource, featSink):
+    """Computer extracted feature correlation
+
+    Parameters
+    ----------
+    featSuspicious:
+        Testing feature table
+    featSource:
+        Training positive feature table
+    featSink:
+        Training negative feature table   
+
+    """
 
     numSus = featSuspicious.shape[0]
     numSor = featSource.shape[0]
@@ -66,6 +78,7 @@ def computeFeatureCorrelation(featSuspicious, featSource, featSink):
     return weightFeat
 
 def normalize(comb):
+    """Feature normalization"""
 
     cmax = np.amax(comb, axis=0)
     cmin = np.amin(comb, axis=0)
@@ -73,6 +86,7 @@ def normalize(comb):
     return norm
     
 def computeDis(feat1,feat2,opt = 'Euc'):
+    """Compute distance of two vectors."""
 
     dis = 0.0
     if opt == 'Euc':
@@ -84,6 +98,7 @@ def computeDis(feat1,feat2,opt = 'Euc'):
     return dis
 
 def padding(data1,data2):
+    """Padding two images to the larger size"""
 
     m1,n1 = data1.shape
     m2,n2 = data2.shape
@@ -108,6 +123,7 @@ def padding(data1,data2):
     return (data1,data2)
 
 def _MI(pdfs1, pdfs2):
+    """Compute mutual information of two probability density functions"""
 
     numR = len(pdfs1)
     mi_map = np.zeros(numR)
@@ -121,6 +137,7 @@ def _MI(pdfs1, pdfs2):
 
 
 def getPdf(data, center, numR = 10,eq = False):
+    """Compute the pdf functions of each rings from the ROI"""
 
     # equalization before calculating of pdf
     
@@ -159,6 +176,24 @@ def getPdf(data, center, numR = 10,eq = False):
 
    
 def computeIntensityCorrelation(intenSuspicious, intenSource, intenSink, cenSuspicious, cenSource, cenSink):
+    """Computer intensity correlation of two ROIs
+
+    Parameters
+    ----------
+    intenSuspicious: list of numpy array(2D)
+        Testing ROI intensity lists
+    intenSource:
+        Training positive ROI intensity lists
+    intenSink:
+        Training negative ROI intensity lists
+    cenSuspicious: list of tuples with coordination
+        The center coordinations of all suspicious data point
+    cenSource: list of tuples with coordination
+        The center coordinations of all positive data point
+    cenSink: list of tuples with coordination
+        The center coordinations of all negative data point
+    
+    """
 
     numSus = len(intenSuspicious)
     numSor = len(intenSource)
@@ -191,14 +226,23 @@ def computeIntensityCorrelation(intenSuspicious, intenSource, intenSink, cenSusp
     for i in range(numSus):
         for j in range(i,numSus):
             weightIntens[i+numSor+numSin][j+numSor+numSin] = _MI(pdfSuspicious[i],pdfSuspicious[j])
-			
-	#outputPath = 'C:/Tomosynthesis/localtest/res/'   
-    #np.savetxt(outputPath + 'weightIntens.txt', weightIntens, delimiter='\t')
         
     return weightIntens
 
 
 def computeSpatialCorrelation(coordSuspicious, numSor, numSin):
+    """Computer spacial correlation of ROIs
+
+    Parameters
+    ----------
+    coordSuspicious: list of tuples
+        The Coordination of all testing RIO
+    numSor:
+        The number of source data point
+    numSin:
+        The number of sink data point
+    
+    """
 
     numSus = len(coordSuspicious)
 
@@ -237,6 +281,16 @@ def computeSpatialCorrelation(coordSuspicious, numSor, numSin):
     return weightSpatial
 
 def computeSpaDis(coord_1,coord_2):
+    """Computer spacial correlation of two ROIs
+
+    Parameters
+    ----------
+    coord_1:
+        The coordination of the first ROI
+    coord_2:
+        The coordination of the second ROI
+    
+    """
 	
     spatio = 5
     spaDis = np.sqrt((coord_1[0] - coord_2[0])**2 + (coord_1[1] - coord_2[1])**2 + (spatio*coord_1[2] - spatio*coord_2[2])**2 )
@@ -245,9 +299,22 @@ def computeSpaDis(coord_1,coord_2):
 
     
 def computeWeight(sliceList, sourceSams, sinkSams, alpha, beta = 0.1):
-    '''   beta (0.1-0.2)
+    """Computer the weigh between ROIs using intensity, coordination and features.
 
-    '''
+    Parameters
+    ----------
+    sliceList:
+        List of suspicious data
+    sourceSams:
+        List positive data
+    sinkSams:
+        List of negative data
+    alpha:
+        Weight coefficient for feature correlation
+    beta:
+        Weight coefficient for spatial correlation
+    
+    """
 
 
     numSource = len(sourceSams)
@@ -295,36 +362,51 @@ def computeWeight(sliceList, sourceSams, sinkSams, alpha, beta = 0.1):
             coordSuspicious.append(sliceList[i].LightPatchList[j].image_center)
             cenSuspicious.append(sliceList[i].LightPatchList[j].patch_center)
             
-    outputPath = 'C:/Tomosynthesis/localtest/res/'
-    np.savetxt(outputPath + 'featSuspicious.txt', featSuspicious, delimiter='\t')
-    np.savetxt(outputPath + 'featSource.txt', featSource, delimiter='\t')
-    np.savetxt(outputPath + 'featSink.txt', featSink, delimiter='\t')
+    #outputPath = 'C:/Tomosynthesis/localtest/res/'
+    #np.savetxt(outputPath + 'featSuspicious.txt', featSuspicious, delimiter='\t')
+    #np.savetxt(outputPath + 'featSource.txt', featSource, delimiter='\t')
+    #np.savetxt(outputPath + 'featSink.txt', featSink, delimiter='\t')
     
-	# compute feature correlation    
+    # compute feature correlation    
     weightFeat = computeFeatureCorrelation(featSuspicious, featSource, featSink)
-    np.savetxt(outputPath + 'featcorrelation.txt', weightFeat, delimiter='\t')
+    #np.savetxt(outputPath + 'featcorrelation.txt', weightFeat, delimiter='\t')
     print 'done feature correlation'
 
     # compute spatial connection
     weightSpatial = computeSpatialCorrelation(coordSuspicious, numSource, numSink)
-    np.savetxt(outputPath + 'spatcorrelation.txt', weightSpatial, delimiter='\t')
+    #np.savetxt(outputPath + 'spatcorrelation.txt', weightSpatial, delimiter='\t')
     print 'done spatial correlation'
     
        
     # compute intensity mutual information  
     weightInten = computeIntensityCorrelation(intenSuspicious, intenSource, intenSink,cenSuspicious, cenSource, cenSink)
-    np.savetxt(outputPath + 'mutualinformation.txt', weightInten, delimiter='\t')
+    #np.savetxt(outputPath + 'mutualinformation.txt', weightInten, delimiter='\t')
     print 'done intensity correlation'
 
     #regularized weight
     weight = alpha*weightFeat + beta*weightSpatial #+ weightInten
     weight = np.max(weight) - weight
-    np.savetxt(outputPath + 'weight.txt', weight, delimiter='\t')
+    #np.savetxt(outputPath + 'weight.txt', weight, delimiter='\t')
 
     return weight
 
 
 def buildGraph(numSource,numSink,numSuspicious,weight):
+    """Build a graph with all positive data points as source, and all negative
+    data points as sink.
+
+    Parameters
+    ----------
+    
+    numSource: integer
+        The number of positive data points
+    numSink: integer
+        The number of negative data points
+    numSuspicious: integer
+        The number of suspicious data points
+    weight: numpy array (2D)
+        The weight matrix
+    """
 
     numTot = numSource + numSink + numSuspicious
     
@@ -333,8 +415,8 @@ def buildGraph(numSource,numSink,numSuspicious,weight):
         for j in range(0,i):
             weight[i,j] = weight[j,i]
 
-    outputPath = 'C:/Tomosynthesis/localtest/res/'
-    np.savetxt(outputPath + 'weight_symmetrical.txt', weight, delimiter='\t')
+    #outputPath = 'C:/Tomosynthesis/localtest/res/'
+    #np.savetxt(outputPath + 'weight_symmetrical.txt', weight, delimiter='\t')
     
     # build graph
     gr = digraph()
@@ -362,6 +444,18 @@ def buildGraph(numSource,numSink,numSuspicious,weight):
     return gr
 
 def classify(gr,numSource,numSink):
+    """Classify using the built graph by the max_flow algorithm
+
+    Parameters
+    ----------
+    
+    gr: 
+        The graph model
+    numSource: integer
+        The number of positive data points
+    numSink: integer
+        The number of negative data points
+    """
     
     flows, cuts = maximum_flow(gr, 0, numSource)
 
@@ -369,6 +463,22 @@ def classify(gr,numSource,numSink):
 
     
 def mainClassify(sliceList,sourceSams,sinkSams,alpha = 1,beta = 0.2):
+    """Main function for classification using graph cut.
+
+    Parameters
+    ----------
+    sliceList:
+        List of suspicious data
+    sourceSams:
+        List positive data
+    sinkSams:
+        List of negative data
+    alpha:
+        Weight coefficient for feature correlation
+    beta:
+        Weight coefficient for spatial correlation
+
+    """ 
     
     numSource = len(sourceSams)
     numSink = len(sinkSams)

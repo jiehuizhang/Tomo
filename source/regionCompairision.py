@@ -1,4 +1,4 @@
-"""This function includes functions for comparing two image regions"""
+"""Compare regions in two sides images based on variety of metrics"""
 
 import numpy as np
 from scipy.spatial import distance as dist
@@ -13,6 +13,22 @@ import cv2.cv as cv
 
 
 def exHistgram(imregion, lb = 2000, up = 8000,s_bin = 100, normalize = True):
+    """Extract histogram from a image region.
+
+    Parameters
+    ----------
+    imregion : numpy array (2D)
+        The image region data
+    lb : integer
+        Lower bound of the histogram
+    ub : integer
+        Upper bound of the histogram
+    s_bin:
+        The bin size of the histogram
+    normalize: bool
+        If or not to normalize the histogram
+        
+    """
 
     ## create bins with input lower bound, upper bound and bin size
     bins = range(lb,up,s_bin)
@@ -28,6 +44,22 @@ def exHistgram(imregion, lb = 2000, up = 8000,s_bin = 100, normalize = True):
 
 
 def compHist(hist1, hist2, method, formula):
+    """Compare two histograms with given method and formula.
+
+    Parameters
+    ----------
+    hist1 : 1D array
+        The first histogram
+    hist2 : 1D array
+        The second histogram
+    method : str(cv integer)
+        Options for method ('cv_comp', 'scipy_comp', 'kl_div')
+    formula: str(cv integer)
+        Options for formula.
+        For method == 'cv_comp' (cv.CV_COMP_CORREL, cv.CV_COMP_CHISQR, cv.CV_COMP_INTERSECT, cv.CV_COMP_BHATTACHARYYA)
+        For method == 'scipy_comp' ("Euclidean", "Manhattan", "Chebysev")
+        
+    """
 
     ## using opencv
     if method == 'cv_comp':
@@ -57,6 +89,19 @@ def compHist(hist1, hist2, method, formula):
 
 
 def tempMatch(imregion1,imregion2,method):
+    """Compare two image regions with given method.
+
+    Parameters
+    ----------
+    imregion1 : 2D array
+        The image data of region 1
+    imregion2 : 2D array
+        The image data of region 2
+    method : cv integer
+        Options for method (cv.CV_TM_SQDIFF, cv.CV_TM_SQDIFF_NORMED, cv.CV_TM_CCORR,
+        cv.CV_TM_CCORR_NORMED, cv. CV_TM_CCOEFF, CV_TM_CCOEFF_NORMED)
+        
+    """
 
     # Apply template Matching
     dis = cv2.matchTemplate(np.float32(imregion1),np.float32(imregion2),method)
@@ -68,6 +113,16 @@ def tempMatch(imregion1,imregion2,method):
 
 
 def matdecomp(imregion, method):
+    """Compute matrix decomposition
+
+    Parameters
+    ----------
+    imregion : 2D array
+        The image region data
+    method : str
+        Options for method ('eigen', 'NMF')
+        
+    """
 
     if method == 'eigen':
         ## columns are eigen vectors
@@ -86,6 +141,22 @@ def matdecomp(imregion, method):
         
 
 def regionComp(imregion1,imregion2, dis_opt, method,formula):
+    """Main region comparision function
+
+    Parameters
+    ----------
+    imregion1 : 2D array
+        The image data of region 1
+    imregion2 : 2D array
+        The image data of region 2
+    dis_opt: str
+        Options for comparing dimensionality ('1d', '2d', 'decomp')
+    method : str (cv integer)
+        Options for method 
+    formula: str (cv integer)
+        Options for formula
+        
+    """
 
     ## 1-d distribution comparision    
     # extract distribution as histogram
@@ -143,6 +214,18 @@ def regionComp(imregion1,imregion2, dis_opt, method,formula):
         return dis_f
 
 def vectComp(vecMat1, vecMat2, numComp = 2):
+    """Compute distance between two vector matrices
+
+    Parameters
+    ----------
+    vecMat1 : 
+        The first vector matrix
+    vecMat2 : 
+        The second vector matrix
+    numComp: integer
+        Number of components remainded
+        
+    """
 
     dis = 0
     for i in range(numComp):
@@ -153,6 +236,22 @@ def vectComp(vecMat1, vecMat2, numComp = 2):
 
 
 def imageComp(im1,im2, params, region_s = 200, olap_s = 200):
+    """Main image comparision function
+
+    Parameters
+    ----------
+    im1 : 2D array
+        The image data of image 1
+    im2 : 2D array
+        The image data of image 2
+    params: tuple
+        Options of method and formula for comparing 
+    region_s : integer
+        Cropping region size
+    olap_s: integer
+        Overlapping size.
+        
+    """
 
     # construct result image
     r = min(im1.shape[0],im2.shape[0])

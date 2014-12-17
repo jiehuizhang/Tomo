@@ -1,4 +1,4 @@
-''' Multi Instance Desiicion Tree Classfication '''
+"""Multi Instance Desiicion Tree Classfication """
 
 import numpy as np
 from sklearn import tree
@@ -10,6 +10,17 @@ import TPatch
 import Dimreduction
 
 def ClusteringtoBags(coord, dis_thresh = 15):
+    """Clustering ROIs in slices into 3D ROIs, so that 2D ROI with close (x,y)
+    coordination from adjacent slices  will be assigned into one bag.
+
+    Parameters
+    ----------
+    coord: list of coordination
+        The coordination list for all ROIs
+    dis_thresh:
+        Threshold for assigning ROIs into the same bag.
+    
+    """
 
     bagIDS = []
     bagIDS.append(0)
@@ -30,6 +41,16 @@ def ClusteringtoBags(coord, dis_thresh = 15):
     return (bagIDS,global_bid)
 
 def info_fetch(plist,opt):
+    """ Fetch features information from the list
+
+    Parameters
+    ----------
+    plist: list of the data set
+        The list include ROIs and all information within
+    opt: atr
+        If the required information are for taining or testing
+    
+    """
 
     coord = []
     bagIDS = []
@@ -40,6 +61,9 @@ def info_fetch(plist,opt):
             if feats == None:
                 feats = plist[i].feats
             else:
+                if plist[i].feats == None:
+                    plist[i].feats = np.zeros((1,feats.shape[1]))
+                    print "Nan feature occured!"
                 feats = np.vstack((feats, plist[i].feats))
                                
             for j in range(len(plist[i].LightPatchList)):
@@ -59,6 +83,17 @@ def info_fetch(plist,opt):
         return (feats,bagIDS)
     
 def classify(sliceList, cancerList, controlList):
+    """Main function for classification using multi instance desicion tree
+
+    Parameters
+    ----------
+    sliceList:
+        List of suspicious data
+    cancerList:
+        List positive data
+    controlList:
+        List of negative data
+    """
 
     # Fetch feature and coordinate information from list
     fsus,coordsus = info_fetch(sliceList, opt = 'test')
@@ -90,7 +125,9 @@ def classify(sliceList, cancerList, controlList):
     for i in range(bsize):
         mask = np.asarray(bid_sus) == i
         score.append( np.sum(predicts[mask])/predicts[mask].size )
-        print (i, score[i], coordsus[np.where(np.asarray(bid_sus) == i)[0][0]] )
+        if score[i]>0.5:
+            print (i, score[i], coordsus[np.where(np.asarray(bid_sus) == i)[0][0]] )
+
 
 
      

@@ -1,7 +1,4 @@
-"""
-This file includes the class realization of TP-Spline
-The implementation is based on opencv functions.
-"""
+"""Thin plate spline interpolation."""
 
 import numpy as np
 import math
@@ -12,7 +9,6 @@ import time
 class TPSpline:
 
     def __init__ (self):
-        '''Initialization'''
 
         self.psrc = []
         self.pdst = []
@@ -29,6 +25,16 @@ class TPSpline:
         return 'TPSpline'
 
     def setCorrespondences(self, pS, pD):
+        """Set the fiducial points for registration.
+
+        Parameters
+        ----------
+        pS : list
+            Lists of control point from source image
+        pD : list
+            Lists of control point from destination image
+
+        """
 
         if len(pS) != len(pD):
             print 'Correspondences not consistent !'
@@ -39,6 +45,7 @@ class TPSpline:
         self.lenspline = min(len(pS),len(pD))
 
     def fktU(self, p1, p2):
+        """The U = f(r) function"""
 
         r = (p1[0] - p2[0])**2 + (p1[1] - p2[1])**2
 
@@ -50,6 +57,7 @@ class TPSpline:
                  
 
     def computeSplineCoeffs(self, lamda):
+        """Solve the linear system"""
 
         dim = 2
         n = self.lenspline
@@ -86,6 +94,7 @@ class TPSpline:
                           
 
     def interpolate(self,p):
+        """Compute displacement based on computed splie coefficients"""
        
         k1 = self.cMatrix.shape[0] - 3
         kx = self.cMatrix.shape[0] - 2
@@ -117,6 +126,8 @@ class TPSpline:
         return interP
 
     def interpolate_fast(self,p):
+        """A faster version of Compute displacement based on computed
+        splie coefficients"""
 
         psudo_p = np.asarray([1,p[0],p[1]])
 
@@ -140,6 +151,7 @@ class TPSpline:
         return intP 
 
     def warpImage(self, src, lamda = 0.05):
+        """Warpiing the source image"""
 
         self.computeSplineCoeffs(lamda)
 
@@ -160,6 +172,7 @@ class TPSpline:
         return warped
  
     def computeMaps(self, datasize):
+        """Compute dispalcement for all pixels"""
 
         self.mx = np.zeros(datasize, np.float32)
         self.my = np.zeros(datasize, np.float32)
@@ -172,6 +185,7 @@ class TPSpline:
 
 
     def computeMaps_fast(self, datasize):
+        """A faster version of compute dispalcement for all pixels"""
 
         intPs = [self.interpolate_fast((col,row))for row in xrange(datasize[0]) for col in xrange(datasize[1])]             
         intPs = np.asarray(intPs)

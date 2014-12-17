@@ -1,4 +1,4 @@
-'''AC segmentation'''
+'''Active contour segmentation'''
 
 import sys
 #import pymaxflow
@@ -36,6 +36,7 @@ def circle_levelset(shape, center, sqradius, scalerow=1.0):
     return u
 
 def ac_inwards(imdata,visulization = False):
+    """Propagation from outside toward the center."""
     
     #  calculate gradient information (I)
     gI = morphsnakes.gborders(imdata, alpha=0.5, sigma=2)
@@ -52,6 +53,7 @@ def ac_inwards(imdata,visulization = False):
     return ls
 
 def ac_outwards(imdata,visulization = False):
+    """Propagation from the center toward outside."""
 
     imdata = np.max(imdata) - imdata
 
@@ -70,6 +72,7 @@ def ac_outwards(imdata,visulization = False):
     return ls
 
 def getCentSkewness(labim,area,index,centroid):
+    """Calculate object skewness."""
 
     cen_skew = 0.0
     for i in range(labim.shape[0]):
@@ -82,6 +85,7 @@ def getCentSkewness(labim,area,index,centroid):
     return cen_skew
 
 def getUniqueContour(contour):
+    """Trimimng contour so that pixels are unique along contour"""
     
     length = contour.shape[0]
     cont_list = []
@@ -104,8 +108,16 @@ def getUniqueContour(contour):
     return uniqcontour
 
 def getRBSTim(labim,im):
+    """Compute RBST image
 
-    outputPath = 'C:/Tomosynthesis/localtest/res/'
+    Parameters
+    ----------
+
+    labim:
+        Label image
+    im:
+        original image
+    """
 
     height = labim.shape[0] - 1
     width = labim.shape[1] - 1
@@ -270,16 +282,21 @@ def getRBSTim(labim,im):
         if h_gr_bin[0,i] - h_gr_bin[0,i-1] == 1:
             ocross = ocross +1
     return ocross   
-    '''          
-    tiffLib.imsave(outputPath + 'RBSTim.tif',np.float32(RBSTim))   #########
-    tiffLib.imsave(outputPath + 'RBST.tif',np.float32(RBST))   #########
-    tiffLib.imsave(outputPath + 'contim.tif',np.float32(contim))   #########
-    tiffLib.imsave(outputPath + 'RBSTgr.tif',np.float32(RBSTgr))   #########
-    tiffLib.imsave(outputPath + 'h_gr.tif',np.float32(h_gr))   #########
-    tiffLib.imsave(outputPath + 'h_gr_bin.tif',np.float32(h_gr_bin))   #########
-    '''
+
     
 def getLabelImFeats(lsim,center,orgim):
+    """Compute object geometry features.
+
+    Parameters
+    ----------
+    lsim:
+        Segmented binary image
+    center:
+        Center coordinate(x,y) of the object
+    orgim:
+        Original image
+
+    """
     
     label_img = skimage.measure.label(lsim)
     regions = regionprops(label_img)

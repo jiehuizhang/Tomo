@@ -1,3 +1,4 @@
+"""Fiducial Points selection and registration"""
 import skimage
 from skimage import filter
 from scipy import ndimage
@@ -14,7 +15,20 @@ import activeContourSegmentation as acSeg
 import TPSpline
 import TPS_wrapper
 
-def registration(im1, im2, num = 10, opt = 'py'):
+def registration(im1, im2, num = 10, opt = 'py', outputPath = 'None'):
+    """The registration main function.
+
+    Parameters
+    ----------
+    im1 : numpy array (2d)
+        The source image
+    im2 : numpy array (2d)
+        The destination image
+    num: integer
+        The number of fiducial points.
+    outputPath: str
+        The output path
+    """
 
     # determin which one is the right side of the breast
     b_size = 5
@@ -54,13 +68,8 @@ def registration(im1, im2, num = 10, opt = 'py'):
     dilated1 = ndimage.convolve(sam_im1, selem, mode='constant', cval=0)
     dilated2 = ndimage.convolve(sam_im2, selem, mode='constant', cval=0)
 
-    
-    oppath = 'C:/Tomosynthesis/localtest/reg/'
     points1 = np.asarray(points1)
     points2 = np.asarray(points2)
-    np.savetxt(oppath + 'ps.txt', points1, '%d', delimiter=' ')   # X is an array
-    np.savetxt(oppath + 'pd.txt', points2, '%d', delimiter=' ')   # X is an array
-    tiffLib.imsave('C:/Tomosynthesis/localtest/reg/'+ 'im__1.tif',im1)
     
     # Thin Plate Spline interpolation
     dst = np.zeros(im1.shape)
@@ -69,15 +78,26 @@ def registration(im1, im2, num = 10, opt = 'py'):
         tps = TPSpline.TPSpline()
         tps.setCorrespondences(points1, points2)
         dst = tps.warpImage(im1)
-    '''
+        return dst
+
     if opt == 'c':
-        dst = np.zeros(im1.shape)
-        tps = TPS_wrapper.TPScpp(points1, points2)      
-        tps.warp(im1, dst, lamda, interpolation, tpsInter)  
-    '''
-    return (dst, dilated1, dilated2) 
+        print "Please run the interpolation with C++ exe file!"
+        print "./TPSpline /home/yanbin/Tomosynthesis/libs/TPSpline/test/ps.txt /home/yanbin/Tomosynthesis/libs/TPSpline/test/pd.txt /home/yanbin/Tomosynthesis/libs/TPSpline/test/5016_test.tif /home/yanbin/Tomosynthesis/libs/TPSpline/test/dst.tif"
+        np.savetxt(outputPath + 'ps.txt', points1, '%d', delimiter=' ')   # X is an array
+        np.savetxt(outputPath + 'pd.txt', points2, '%d', delimiter=' ')   # X is an array
+        tiffLib.imsave(outputPath + 'im1.tif',im1)
+        return None
+        
 
 def findEdge(imdata):
+    """Find the contour of the breast
+
+    Parameters
+    ----------
+    imdata : numpy array (2d)
+        The image data
+
+    """
 
     # remove border effect
     imdata[:,0] = imdata[:,1]
@@ -94,6 +114,16 @@ def findEdge(imdata):
     return contour
 
 def tuneEdge(contour, imshape):
+    """Tune the contour so that there is no back and forth in the contour pixels
+
+    Parameters
+    ----------
+    contour : 
+        Initial contour
+    imshape:
+        The images shape
+
+    """
 
     r_contour = []
     upedge = 100
@@ -116,6 +146,15 @@ def tuneEdge(contour, imshape):
     return r_contour           
 
 def contour_sampling(contour, num,delta = 5):
+    """Sampling from the contour with given parameters
+
+    Parameters
+    ----------
+    contour : 
+        Tuned contour
+    num: integer
+        Number of fiducial points needed
+    """
     
     samples = []
     step = len(contour)/num
@@ -133,6 +172,7 @@ def contour_sampling(contour, num,delta = 5):
                
 
 def curvature(contour,fn = 3, bn = 3):
+    """Compute curvature of a contour"""
 
     clen = contour.shape[0]
     E = np.zeros((clen,), np.float32)

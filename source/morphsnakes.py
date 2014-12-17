@@ -1,28 +1,11 @@
 # -*- coding: utf-8 -*-
 
 """
-morphsnakes
-===========
-
 This is a Python implementation of the algorithms introduced in the paper
 
   Márquez-Neila, P., Baumela, L., Álvarez, L., "A morphological approach
   to curvature-based evolution of curves and surfaces". IEEE Transactions
   on Pattern Analysis and Machine Intelligence (PAMI), 2013.
-
-This implementation is intended to be as brief, understandable and self-contained
-as possible. It does not include any enhancement to make it fast or efficient.
-
-Any practical implementation of this algorithm should work only over the
-neighbor pixels of the 0.5-levelset, not over all the embedding function,
-and perhaps should feature multi-threading or GPU capabilities.
-
-The classes MorphGAC and MorphACWE provide most of the functionality of this
-module. They implement the Morphological Geodesic Active Contours and the
-Morphological Active Contours without Edges, respectively. See the
-aforementioned paper for full details.
-
-See test.py for examples of usage.
 """
 
 __author__ = "P. Márquez Neila <p.mneila@upm.es>"
@@ -36,7 +19,7 @@ from scipy.ndimage import binary_dilation, binary_erosion, \
                         gaussian_filter, gaussian_gradient_magnitude
 
 #from matplotlib import pyplot as ppl
-outputPath = 'C:/Tomosynthesis/localtest/res/'
+
 class fcycle(object):
     
     def __init__(self, iterable):

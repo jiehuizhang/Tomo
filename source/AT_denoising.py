@@ -1,7 +1,9 @@
-'''The Denoising Module:
-   Step 1: Anscombe Transform
-   Step 2: Adaptive Wiener Filter
-   Step 3: Inverse Anscombe Transform (Unbiased)'''
+"""The denoising module includes three steps:
+
+*  Anscombe Transform
+*  Adaptive Wiener Filter
+*  Inverse Anscombe Transform (Unbiased)
+"""
 
 from scipy import signal
 import numpy as np
@@ -9,6 +11,29 @@ import tiffLib
 import math
 
 def DenoisingAW(imdata,opt = 'asymptotic', block_m=5,block_n=5):
+    """ The denoising main function.
+
+    Parameters
+    ----------
+    imdata: numpy array
+        The input image array
+    opt: str
+        The options for inverse transform. Default set as 'asymptotic'
+    block_m: integer
+        The window size_x for winnier filter
+    block_n: integer
+        The window size_y for winnier filter
+
+    Examples
+    --------
+    >>> import ImageIO
+    >>> import AT_denoising
+    >>> dataPath = 'C:/Tomosynthesis/localtest/'
+    >>> fileName = 'test-crop.tif'
+    >>> im = ImageIO.imReader(dataPath,fileName, 'tif',2)
+    >>> denoised = AT_denoising.DenoisingAW(im.data[0])
+    
+    """
     imtransformed = AnscombeTrans(imdata)
     imfiltered = AdaptWiener(imtransformed,block_m,block_n)
     iminversed = InAnscombeTrans(imfiltered,opt)
@@ -16,13 +41,28 @@ def DenoisingAW(imdata,opt = 'asymptotic', block_m=5,block_n=5):
     return iminversed
 
 def AnscombeTrans(imdata):
+    """ The Anscombe Transform function.
 
+    Parameters
+    ----------
+    imdata: numpy array
+        The input image array
+    """
     imdata = np.float32(imdata)
     z = 2*np.sqrt(imdata+3/8)
 
     return np.uint16(z)
     
 def InAnscombeTrans(imdata, opt = 'exact'):
+    """ The Inverse Anscombe Transform function.
+
+    Parameters
+    ----------
+    imdata: numpy array
+        The input image array
+    opt: str
+        The options for inverse transform. Default set as 'asymptotic'.
+    """
 
     imdata = np.float32(imdata)
     if opt == 'algebra':
@@ -42,6 +82,17 @@ def InAnscombeTrans(imdata, opt = 'exact'):
     return np.uint16(z)   
 
 def AdaptWiener(imdata,block_m=5,block_n=5):
+    """ The Inverse Anscombe Transform function.
+
+    Parameters
+    ----------
+    imdata: numpy array
+        The input image array
+    block_m: integer
+        The window size_x for winnier filter
+    block_n: integer
+        The window size_y for winnier filter
+    """
 
     shape = imdata.shape
     npixel_nhood = block_m*block_n

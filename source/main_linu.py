@@ -4,7 +4,7 @@ import gc
 
 import numpy as np
 import scipy.ndimage.filters as filters
-from pylab import *
+#from pylab import *
 import pickle
 
 import ImageIO

@@ -10,6 +10,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def line_triming(lines,side,n_row, n_col):
+    """ Triming from the list of detected lines based on image coordinations.
+
+    Parameters
+    ----------
+    lines: list of line
+    side: integer
+        The side of the breast (0/1)
+    n_row: integer
+        image row number
+    n_col: integer
+        image column number    
+    """
     
     t_lines = []
     dis_mid = []
@@ -45,6 +57,17 @@ def line_triming(lines,side,n_row, n_col):
     return []
 
 def mmask(ishape, line, side):
+    """ Creat a binary mask with one side of the line zero, and the other side 1
+
+    Parameters
+    ----------
+    ishape: tuple
+        image shape
+    line: 
+    side: integer
+        The side of the breast (0/1)
+  
+    """
     
     p0,p1 = line
     slope = np.double(p0[1] - p1[1])/np.double(p0[0] - p1[0])
@@ -56,6 +79,16 @@ def mmask(ishape, line, side):
 
 
 def PMremove(image,threshold = 15.5, visulization = False):
+    """ Main function to remove pectoral muscle
+
+    Parameters
+    ----------
+    image: numpy array (2D)
+        input image data
+    threshold:float
+        Threshold for hough transformation      
+  
+    """
 
     # binarizing
     mask = image < threshold
@@ -152,28 +185,4 @@ def test_example():
     plt.axis((0, cols, rows, 0))
     plt.title('Detected lines')
 
-    # camera man, using the Probabilistic Hough Transform
-    image = data.camera()
-    edges = canny(image, 2, 1, 25)
-    lines = probabilistic_hough_line(edges, threshold=10, line_length=5, line_gap=3)
 
-    plt.figure(figsize=(8, 3))
-
-    plt.subplot(131)
-    plt.imshow(image, cmap=plt.cm.gray)
-    plt.title('Input image')
-
-    plt.subplot(132)
-    plt.imshow(edges, cmap=plt.cm.gray)
-    plt.title('Canny edges')
-
-    plt.subplot(133)
-    plt.imshow(edges * 0)
-
-    for line in lines:
-        p0, p1 = line
-        plt.plot((p0[0], p1[0]), (p0[1], p1[1]))
-
-    plt.title('Probabilistic Hough')
-    plt.axis('image')
-    plt.show()

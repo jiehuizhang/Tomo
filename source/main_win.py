@@ -4,7 +4,7 @@ import gc
 
 import numpy as np
 import scipy.ndimage.filters as filters
-from pylab import *
+#from pylab import *
 import pickle
 from skimage.filter import threshold_otsu
 from skimage.filter import threshold_adaptive

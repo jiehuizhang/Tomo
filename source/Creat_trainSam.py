@@ -1,5 +1,3 @@
-""" Creat Training Samples from image crop"""
-
 import sys, os, re, operator, pdb, subprocess, time
 import numpy as np
 from scipy import ndimage
@@ -12,6 +10,23 @@ import AT_denoising
 import tiffLib
 
 def creatTrainigSam(dataPath, opt = 'all', iRnum = 6,iSnum = 12, gRnum = 4,gSnum = 12):
+    """ Creat training samples(2D) and compute features for each training sample 
+
+    Parameters
+    ----------
+    dataPath: str
+        The directory where training image ROIs are stores.
+    opt: str
+        Options for compute features.
+    iRnum: integer
+        The number of rings to be divided in computing intensity features
+    iSnum: integer
+        The number of sectors to be divided in computing intensity features
+    gRnum: integer
+        The number of rings to be divided in computing gradient features
+    gSnum: integer
+        The number of sectors to be divided in computing gradient features
+    """
 
     file_list = os.listdir(dataPath)
     int_feats = np.zeros((len(file_list),4),np.double)
@@ -71,6 +86,23 @@ def creatTrainigSam(dataPath, opt = 'all', iRnum = 6,iSnum = 12, gRnum = 4,gSnum
         return seg_feats
 
 def creatTrainigSam_3D(dataPath, iRnum = 6,iSnum = 12, gRnum = 4,gSnum = 12):
+    """ Creat training samples(3D) and compute features for each training sample 
+
+    Parameters
+    ----------
+    dataPath: str
+        The directory where training image ROIs are stores.
+    opt: str
+        Options for compute features.
+    iRnum: integer
+        The number of rings to be divided in computing intensity features
+    iSnum: integer
+        The number of sectors to be divided in computing intensity features
+    gRnum: integer
+        The number of rings to be divided in computing gradient features
+    gSnum: integer
+        The number of sectors to be divided in computing gradient features
+    """
 
     file_list = os.listdir(dataPath)
 

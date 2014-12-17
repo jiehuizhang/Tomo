@@ -1,4 +1,4 @@
-"""Micro cacification detection"""
+"""Micro calcification detection"""
 import math
 import numpy as np
 from scipy import ndimage
@@ -6,7 +6,20 @@ import scipy.ndimage.filters as filters
 import tiffLib
 import TMicroCal
 
+from skimage.morphology import erosion, dilation, opening, closing, white_tophat
+from skimage.morphology import black_tophat, skeletonize, convex_hull_image
+from skimage.morphology import disk
+
 def bs_Estimatimation(imdata, threshold, depth = 16):
+    """Esimate the background and extract the value level of threshold%.
+
+    Parameters
+    ----------
+    imdata: numpy array (2D)
+        The image data
+    threshold: float (0~1)
+        The percentage level.        
+    """
 
     height, width = imdata.shape
     scale = int(math.pow(2,depth))
@@ -35,6 +48,15 @@ def bs_Estimatimation(imdata, threshold, depth = 16):
     return estimated_bs
 
 def fg_thresholding(imdata, threshold):
+    """Extract foreground with intensity higher than the threshold.
+
+    Parameters
+    ----------
+    imdata: numpy array (2D)
+        The image data
+    threshold: float
+        The intensity threshold.        
+    """
 
     fg = np.zeros(imdata.shape, dtype=np.uint16)
     fg[:,:] = imdata[:,:]
@@ -44,7 +66,19 @@ def fg_thresholding(imdata, threshold):
 
     
 def log_filtering(imdata, winSize,sigma, fg_thresh,option = 'proplog'):
-    '''sample_rate should be less than window size'''
+    """Blob detection using LOG filter, image is cropped to local windows before filtering.
+
+    Parameters
+    ----------
+    imdata: numpy array (2D)
+        The image data
+    winSize: integer
+        The size of local window.
+    sigma: float
+        Parameter for LOG
+    fg_thresh: float(0~1)
+        The foreground extraction percentage level.
+    """
     
     sample_rate = winSize
     nrow, ncol = imdata.shape
@@ -106,6 +140,18 @@ def log_filtering(imdata, winSize,sigma, fg_thresh,option = 'proplog'):
         return -log_rep_prop
 
 def laebl_connecte_comp(imdata, threshold, size_constrain):
+    """Connect the binarized filtering result into label image.
+
+    Parameters
+    ----------
+    imdata: numpy array (2D)
+        The image data
+    threshold: float
+        Threshold for binarize filtering response 
+    size_constrain: integer
+        Discard MCs larger than size_constrain
+  
+    """
 
     # calculated connected labels
     mask = imdata > threshold
@@ -128,6 +174,16 @@ def laebl_connecte_comp(imdata, threshold, size_constrain):
     return rm_imdata
 
 def MC_buildup_2d(im,mc_im):
+    """compute basic features for MC and organize all of them into a list.
+
+    Parameters
+    ----------
+    imdata: numpy array (2D)
+        The image data
+    mc_im: numpy array (2D)
+        The connected label image 
+
+    """
 
     mask = mc_im > 0
     label_im, nb_labels = ndimage.label(mask)
@@ -167,6 +223,16 @@ def MC_buildup_2d(im,mc_im):
         
 
 def MC_connect_2d(mcList,dis_threshold):
+    """Associate MCs with their neighbours
+
+    Parameters
+    ----------
+    mcList: list
+        The list of all MCs detected
+    dis_threshold: integer
+        The distance threshold for defineing neighbour 
+
+    """
 
     for mc in mcList:
         cent = mc.center
@@ -181,6 +247,16 @@ def MC_connect_2d(mcList,dis_threshold):
         mc.computeDensity_2d()
 
 def MC_connect_3d(mcLists,tolerance = 10):
+    """Connect MC lists from all slices into 3D Mc and return the 3D Mc list
+
+    Parameters
+    ----------
+    mcLists: list
+        The list of all MC list from all slices
+    tolerance: integer
+        MCs within tolerance slices are qualified as being associated into one 3D MC 
+
+    """
     
     global_id = 0
     z_size = len(mcLists)
@@ -199,8 +275,17 @@ def MC_connect_3d(mcLists,tolerance = 10):
     return global_id
 
 def MCs_constuct_3d(mcLists,global_id):
+    """Reorganize 3D MCs with global id
 
-    '''initilize lists '''
+    Parameters
+    ----------
+    mcLists: list
+        The 3D MC list
+    global_id: integer
+        The number of MCs in total in the image stack.
+
+    """
+
     global_list = []
     for i in range(global_id):
         templist = []
@@ -215,6 +300,15 @@ def MCs_constuct_3d(mcLists,global_id):
     return global_list
 
 def MCs_constrain(global_list, num_neighbour = 3):
+    """Compute Features for 3D MCs
+
+    Parameters
+    ----------
+    global_list:
+        List of all detected MCs
+    num_neighbour:
+    
+    """
 
     MC_List_3D = []
     for item in global_list:
@@ -244,7 +338,37 @@ def MCs_constrain(global_list, num_neighbour = 3):
     return MC_List_3D
 
 def parallel_MC_Detection(i,imdata):
+    """Calcification detection processing in parallel.
+
+    Parameters
+    ----------
+    i: integer
+        The current slice in the parallel processing pool
+    imdata : numpy array (2D)
+        The original image data
+    """
+
+    # skin-line remove & preproseesing
+    threshold = 7200
+    mask = imdata > threshold
+    sline = np.zeros(imdata.shape, np.float32)
+    sline[mask] = 1
+    selem = disk(15)
+    dilated = ndimage.convolve(sline, selem, mode='constant', cval=0)  
+    mask = dilated > 0
+
+    threshold2 = 2500
+    mask2 = imdata < threshold2
+    selem = disk(30)
+    boundary = np.zeros(imdata.shape, np.float32)
+    boundary[mask2] = 1
+    dilated = ndimage.convolve(boundary, selem, mode='constant', cval=0)
+    mask2 = dilated > 0
     
+    imdata[mask] = 0
+    imdata[mask2] = 0
+
+    # log filtering
     log = log_filtering(imdata,winSize=40,sigma=3,fg_thresh = 0.6)
     constrained_log = laebl_connecte_comp(log,threshold=3.0,size_constrain = (2,80))
     mcList = MC_buildup_2d(imdata,constrained_log)

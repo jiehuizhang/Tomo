@@ -1,5 +1,24 @@
-""" This File includes functions that creat Gabor kernels
-and compute the coresponding filtering response."""
+""" This module includes functions that creat Gabor kernels
+and compute the coresponding filtering response.
+
+    Examples
+    --------
+    >>> import ImageIO
+    >>> imort TImage
+    >>> import gabor_filter
+    
+    >>> dataPath = 'C:/Tomosynthesis/localtest/'
+    >>> outputPath = 'C:/Tomosynthesis/localtest/res/'
+    >>> fileName = '5016_test.tif'
+    >>> im = ImageIO.imReader(dataPath,fileName, 'tif',2)
+
+    >>> kernels = gabor_filter.creat_Gabor_Kernels(8, 20, 0.0185,0.9)
+    >>> response = gabor_filter.compute_Response(im.data[0],kernels)
+
+    >>> gabor_filter.plot_Kernels(kernels)
+    >>> gabor_filter.plot_Response(response)
+
+"""
 
 from skimage.util import img_as_float
 from skimage.filter import gabor_kernel
@@ -10,12 +29,16 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 def creat_Gabor_Kernels(norientation, sigma, frequency,gamma):
-    """
-    This function creats the Gabor kernels with given parameters.
-	
-    norientation:    number of orientations
-    sigmm:           scale of the kernel
-    frequency:       wavelength/frequency of the kernel
+    """This function creats the Gabor kernels with given parameters.
+
+    Parameters
+    ----------	
+    norientation: integer
+        number of orientations
+    sigmm: float
+        scale of the kernel
+    frequency: float
+        wavelength/frequency of the kernel
     """
 
     kernels = []	
@@ -29,12 +52,16 @@ def creat_Gabor_Kernels(norientation, sigma, frequency,gamma):
     return kernels
 
 def creat_FilterBank(norientation, sigmas, frequencies, gammas):
-    """
-    This function creats the Gabor filter bank with given parameters.
-	
-    norientation:    number of orientations
-    sigmas:           a list of scales of the kernels
-    frequencies:        a list of the wavelength/frequency of the kernels
+    """This function creats the Gabor filter bank with given parameters.
+
+    Parameters
+    ----------	
+    norientation: integer list
+        number of orientations
+    sigmas: float lists
+        a list of scales of the kernels
+    frequencies: float list
+        a list of the wavelength/frequency of the kernels
     """
     
     filter_bank = []
@@ -49,10 +76,14 @@ def creat_FilterBank(norientation, sigmas, frequencies, gammas):
     return filter_bank
 
 def fftconvolve(image, kernel):
-    """
-    This function calculate 2d convolution using fft
-    image:   input image
-    kernel:  input kernel
+    """This function calculate 2d convolution using fft
+
+    Parameters
+    ----------
+    image: numpy array
+        input image
+    kernel:
+        input kernel
     """
     # padding so linear convolution is computed instead circular convolution
     data = np.lib.pad(image, ((0,kernel.shape[0]),(0,kernel.shape[1])),'edge')
@@ -68,13 +99,15 @@ def fftconvolve(image, kernel):
     return response  
  
 def compute_Response(image,kernels):
-    """
-    This function compute the filtering response of given
-    image and kernels
+    """ This function compute the filtering response of given image and kernels.
 
-    image:     Input image
-    kernels:   Input kernels(a list of kernels with same
-               scale but different orientations)
+    Parameters
+    ----------
+
+    image: numpy array
+        Input image
+    kernels:
+        Input kernels(a list of kernels with same scale but different orientations)
     """
 
     response = []
@@ -85,12 +118,14 @@ def compute_Response(image,kernels):
     return response 
 	
 def compute_Responses(image,filter_bank):
-    """
-    This function compute the filtering responses of given
-    image and the filter bank
+    """ This function compute the filtering responses of given image and the filter bank
 
-    image:     Input image
-    filter_bank:   Input filter bank(a list of kernel set with different parameters)
+    Parameters
+    ----------
+    image: numpy array
+        Input image
+    filter_bank:
+        Input filter bank(a list of kernel set with different parameters)
     """
 
     responses = []
