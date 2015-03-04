@@ -1,0 +1,170 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3.1.3. PMHoughT module &mdash; Tomosynthesis Machine Learning 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Tomosynthesis Machine Learning 1.0 documentation" href="index.html" />
+    <link rel="up" title="3.1. Mass Initial Detection" href="initial_detection.html" />
+    <link rel="next" title="3.2. Segmentation" href="segmentation.html" />
+    <link rel="prev" title="3.1.2. Response_Analysis module" href="Response_Analysis.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="segmentation.html" title="3.2. Segmentation"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="Response_Analysis.html" title="3.1.2. Response_Analysis module"
+             accesskey="P">previous</a> |</li>
+        <li><a href="Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="mass_detection.html" >3. Mass Detection</a> &raquo;</li>
+          <li><a href="initial_detection.html" accesskey="U">3.1. Mass Initial Detection</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-PMHoughT">
+<span id="pmhought-module"></span><h1>3.1.3. PMHoughT module<a class="headerlink" href="#module-PMHoughT" title="Permalink to this headline">¶</a></h1>
+<p>Pectoral Muscle Detection</p>
+<dl class="function">
+<dt id="PMHoughT.PMremove">
+<tt class="descclassname">PMHoughT.</tt><tt class="descname">PMremove</tt><big>(</big><em>image</em>, <em>threshold=15.5</em>, <em>visulization=False</em><big>)</big><a class="reference internal" href="_modules/PMHoughT.html#PMremove"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PMHoughT.PMremove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main function to remove pectoral muscle</p>
+<dl class="docutils">
+<dt>image: numpy array (2D)</dt>
+<dd>input image data</dd>
+<dt>threshold:float</dt>
+<dd>Threshold for hough transformation</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="PMHoughT.line_triming">
+<tt class="descclassname">PMHoughT.</tt><tt class="descname">line_triming</tt><big>(</big><em>lines</em>, <em>side</em>, <em>n_row</em>, <em>n_col</em><big>)</big><a class="reference internal" href="_modules/PMHoughT.html#line_triming"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PMHoughT.line_triming" title="Permalink to this definition">¶</a></dt>
+<dd><p>Triming from the list of detected lines based on image coordinations.</p>
+<p>lines: list of line
+side: integer</p>
+<blockquote>
+<div>The side of the breast (0/1)</div></blockquote>
+<dl class="docutils">
+<dt>n_row: integer</dt>
+<dd>image row number</dd>
+<dt>n_col: integer</dt>
+<dd>image column number</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="PMHoughT.mmask">
+<tt class="descclassname">PMHoughT.</tt><tt class="descname">mmask</tt><big>(</big><em>ishape</em>, <em>line</em>, <em>side</em><big>)</big><a class="reference internal" href="_modules/PMHoughT.html#mmask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PMHoughT.mmask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creat a binary mask with one side of the line zero, and the other side 1</p>
+<dl class="docutils">
+<dt>ishape: tuple</dt>
+<dd>image shape</dd>
+</dl>
+<p>line: 
+side: integer</p>
+<blockquote>
+<div>The side of the breast (0/1)</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="PMHoughT.test_example">
+<tt class="descclassname">PMHoughT.</tt><tt class="descname">test_example</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/PMHoughT.html#test_example"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PMHoughT.test_example" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="Response_Analysis.html"
+                        title="previous chapter">3.1.2. Response_Analysis module</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="segmentation.html"
+                        title="next chapter">3.2. Segmentation</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/PMHoughT.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="segmentation.html" title="3.2. Segmentation"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="Response_Analysis.html" title="3.1.2. Response_Analysis module"
+             >previous</a> |</li>
+        <li><a href="Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="mass_detection.html" >3. Mass Detection</a> &raquo;</li>
+          <li><a href="initial_detection.html" >3.1. Mass Initial Detection</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, SAP.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

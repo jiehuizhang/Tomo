@@ -1,0 +1,225 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>classification &mdash; Tomosynthesis Machine Learning 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Tomosynthesis Machine Learning 1.0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for classification</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;Binary Classification&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">sklearn</span> <span class="kn">import</span> <span class="n">svm</span>
+<span class="kn">from</span> <span class="nn">sklearn</span> <span class="kn">import</span> <span class="n">tree</span>
+<span class="kn">from</span> <span class="nn">sklearn.naive_bayes</span> <span class="kn">import</span> <span class="n">GaussianNB</span>
+
+<div class="viewcode-block" id="classifier"><a class="viewcode-back" href="../classification.html#classification.classifier">[docs]</a><span class="k">class</span> <span class="nc">classifier</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;The testing classifier class. Accept labeled data set, splitting data into</span>
+<span class="sd">    training and testing data. Compute the estimation and acuuracy.&quot;&quot;&quot;</span>
+
+    <span class="n">data_train</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">data_test</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="n">lab_train</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">lab_test</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="n">opt</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">prams</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">predicts</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">accuracy</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span> <span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">data_in</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">lab_in</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialization function&quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_train</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_test</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">lab_train</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lab_test</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">opt</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prams</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">predicts</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">accuracy</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="k">if</span> <span class="n">data_in</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">split_data</span><span class="p">(</span><span class="n">data_in</span><span class="p">,</span><span class="n">lab_in</span><span class="p">)</span>
+        
+<div class="viewcode-block" id="classifier.train"><a class="viewcode-back" href="../classification.html#classification.classifier.train">[docs]</a>    <span class="k">def</span> <span class="nf">train</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">opt</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Training classifiier with given option</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        opt: str</span>
+<span class="sd">            Option for classification algorithm choosed</span>
+<span class="sd">            (&#39;SVM&#39;, &#39;DT&#39;, &#39;GNB&#39;)</span>
+<span class="sd">        data: numpy array(2D)</span>
+<span class="sd">            The training feature table if not initialized</span>
+<span class="sd">        data: numpy array(1D)</span>
+<span class="sd">            The training data label if not initialized</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">data</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data_train</span> <span class="o">=</span> <span class="n">data</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lab_train</span> <span class="o">=</span> <span class="n">label</span>
+
+        <span class="c"># support vector machine</span>
+        <span class="k">if</span> <span class="n">opt</span> <span class="o">==</span><span class="s">&#39;SVM&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">opt</span> <span class="o">=</span> <span class="s">&#39;SVM&#39;</span>
+            <span class="sd">&#39;&#39;&#39;self.prams = svm.SVC(C=0.7, kernel=&#39;rbf&#39;, degree=2, gamma=0.2,</span>
+<span class="sd">                             coef0=0.0, shrinking=True, probability=False, tol=0.001,</span>
+<span class="sd">                             cache_size=200, class_weight=None, verbose=False,</span>
+<span class="sd">                             max_iter=-1, random_state=None)&#39;&#39;&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prams</span> <span class="o">=</span> <span class="n">svm</span><span class="o">.</span><span class="n">SVR</span><span class="p">(</span><span class="n">kernel</span><span class="o">=</span><span class="s">&#39;rbf&#39;</span><span class="p">,</span> <span class="n">degree</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">coef0</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span>
+                                 <span class="n">C</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">shrinking</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">probability</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                                 <span class="n">cache_size</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prams</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_train</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">lab_train</span><span class="p">)</span>
+
+        <span class="c"># decision tree  </span>
+        <span class="k">if</span> <span class="n">opt</span> <span class="o">==</span><span class="s">&#39;DT&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">opt</span> <span class="o">=</span> <span class="s">&#39;DT&#39;</span>           
+            <span class="bp">self</span><span class="o">.</span><span class="n">prams</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">DecisionTreeClassifier</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prams</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prams</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_train</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">lab_train</span><span class="p">)</span>
+
+        <span class="c"># gaussian naive bayes</span>
+        <span class="k">if</span> <span class="n">opt</span> <span class="o">==</span><span class="s">&#39;GNB&#39;</span><span class="p">:</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">opt</span> <span class="o">=</span> <span class="s">&#39;GNB&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prams</span> <span class="o">=</span> <span class="n">GaussianNB</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prams</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_train</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">lab_train</span><span class="p">)</span>
+            
+</div>
+<div class="viewcode-block" id="classifier.classify"><a class="viewcode-back" href="../classification.html#classification.classifier.classify">[docs]</a>    <span class="k">def</span> <span class="nf">classify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">data</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data_test</span> <span class="o">=</span> <span class="n">data</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lab_test</span> <span class="o">=</span> <span class="n">label</span>
+
+        <span class="c"># support vector machine</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">opt</span> <span class="o">==</span><span class="s">&#39;SVM&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">predicts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prams</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_test</span><span class="p">)</span>
+
+        <span class="c"># decision tree</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">opt</span> <span class="o">==</span><span class="s">&#39;DT&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">predicts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prams</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_test</span><span class="p">)</span>
+
+        <span class="c"># gaussian naive bayes</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">opt</span> <span class="o">==</span><span class="s">&#39;GNB&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">predicts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prams</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_test</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="classifier.split_data"><a class="viewcode-back" href="../classification.html#classification.classifier.split_data">[docs]</a>    <span class="k">def</span> <span class="nf">split_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">data_projected</span><span class="p">,</span><span class="n">label</span><span class="p">):</span>
+
+
+        <span class="n">lab_cla_1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">label</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">num_cla_1</span> <span class="o">=</span> <span class="n">lab_cla_1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> 
+        <span class="n">train_ids_1</span> <span class="o">=</span> <span class="n">lab_cla_1</span><span class="p">[</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">num_cla_1</span><span class="p">,</span><span class="mi">2</span><span class="p">)]</span>
+        <span class="n">test_ids_1</span> <span class="o">=</span> <span class="n">lab_cla_1</span><span class="p">[</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">num_cla_1</span><span class="p">,</span><span class="mi">2</span><span class="p">)]</span>
+        <span class="n">train_data_1</span> <span class="o">=</span> <span class="n">data_projected</span><span class="p">[</span><span class="n">train_ids_1</span><span class="p">,:]</span>
+        <span class="n">train_label_1</span> <span class="o">=</span> <span class="n">label</span><span class="p">[</span><span class="n">train_ids_1</span><span class="p">]</span>
+        <span class="n">test_data_1</span> <span class="o">=</span> <span class="n">data_projected</span><span class="p">[</span><span class="n">test_ids_1</span><span class="p">,:]</span>
+        <span class="n">test_label_1</span> <span class="o">=</span> <span class="n">label</span><span class="p">[</span><span class="n">test_ids_1</span><span class="p">]</span>
+
+        <span class="n">lab_cla_2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">label</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">num_cla_2</span> <span class="o">=</span> <span class="n">lab_cla_2</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">train_ids_2</span> <span class="o">=</span> <span class="n">lab_cla_2</span><span class="p">[</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">num_cla_2</span><span class="p">,</span><span class="mi">2</span><span class="p">)]</span>
+        <span class="n">test_ids_2</span> <span class="o">=</span> <span class="n">lab_cla_2</span><span class="p">[</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">num_cla_2</span><span class="p">,</span><span class="mi">2</span><span class="p">)]</span>
+        <span class="n">train_data_2</span> <span class="o">=</span> <span class="n">data_projected</span><span class="p">[</span><span class="n">train_ids_2</span><span class="p">,:]</span>
+        <span class="n">train_label_2</span> <span class="o">=</span> <span class="n">label</span><span class="p">[</span><span class="n">train_ids_2</span><span class="p">]</span>
+        <span class="n">test_data_2</span> <span class="o">=</span> <span class="n">data_projected</span><span class="p">[</span><span class="n">test_ids_2</span><span class="p">,:]</span>
+        <span class="n">test_label_2</span> <span class="o">=</span> <span class="n">label</span><span class="p">[</span><span class="n">test_ids_2</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_train</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">train_data_1</span><span class="p">,</span><span class="n">train_data_2</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lab_train</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">train_label_1</span><span class="p">,</span><span class="n">train_label_2</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_test</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">test_data_1</span><span class="p">,</span><span class="n">test_data_2</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lab_test</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">test_label_1</span><span class="p">,</span><span class="n">test_label_2</span><span class="p">))</span>
+        
+
+        
+    </div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, SAP.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

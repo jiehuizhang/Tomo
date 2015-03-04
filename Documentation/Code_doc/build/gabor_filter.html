@@ -1,0 +1,224 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3.1.1. gabor_filter module &mdash; Tomosynthesis Machine Learning 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Tomosynthesis Machine Learning 1.0 documentation" href="index.html" />
+    <link rel="up" title="3.1. Mass Initial Detection" href="initial_detection.html" />
+    <link rel="next" title="3.1.2. Response_Analysis module" href="Response_Analysis.html" />
+    <link rel="prev" title="3.1. Mass Initial Detection" href="initial_detection.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Response_Analysis.html" title="3.1.2. Response_Analysis module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="initial_detection.html" title="3.1. Mass Initial Detection"
+             accesskey="P">previous</a> |</li>
+        <li><a href="Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="mass_detection.html" >3. Mass Detection</a> &raquo;</li>
+          <li><a href="initial_detection.html" accesskey="U">3.1. Mass Initial Detection</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-gabor_filter">
+<span id="gabor-filter-module"></span><h1>3.1.1. gabor_filter module<a class="headerlink" href="#module-gabor_filter" title="Permalink to this headline">¶</a></h1>
+<p>This module includes functions that creat Gabor kernels
+and compute the coresponding filtering response.</p>
+<blockquote>
+<div><div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">ImageIO</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">imort</span> <span class="n">TImage</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">gabor_filter</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">dataPath</span> <span class="o">=</span> <span class="s">&#39;C:/Tomosynthesis/localtest/&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">outputPath</span> <span class="o">=</span> <span class="s">&#39;C:/Tomosynthesis/localtest/res/&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fileName</span> <span class="o">=</span> <span class="s">&#39;5016_test.tif&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">im</span> <span class="o">=</span> <span class="n">ImageIO</span><span class="o">.</span><span class="n">imReader</span><span class="p">(</span><span class="n">dataPath</span><span class="p">,</span><span class="n">fileName</span><span class="p">,</span> <span class="s">&#39;tif&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">kernels</span> <span class="o">=</span> <span class="n">gabor_filter</span><span class="o">.</span><span class="n">creat_Gabor_Kernels</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mf">0.0185</span><span class="p">,</span><span class="mf">0.9</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">response</span> <span class="o">=</span> <span class="n">gabor_filter</span><span class="o">.</span><span class="n">compute_Response</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">kernels</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">gabor_filter</span><span class="o">.</span><span class="n">plot_Kernels</span><span class="p">(</span><span class="n">kernels</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gabor_filter</span><span class="o">.</span><span class="n">plot_Response</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+<dl class="function">
+<dt id="gabor_filter.compute_Response">
+<tt class="descclassname">gabor_filter.</tt><tt class="descname">compute_Response</tt><big>(</big><em>image</em>, <em>kernels</em><big>)</big><a class="reference internal" href="_modules/gabor_filter.html#compute_Response"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gabor_filter.compute_Response" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function compute the filtering response of given image and kernels.</p>
+<dl class="docutils">
+<dt>image: numpy array</dt>
+<dd>Input image</dd>
+<dt>kernels:</dt>
+<dd>Input kernels(a list of kernels with same scale but different orientations)</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gabor_filter.compute_Responses">
+<tt class="descclassname">gabor_filter.</tt><tt class="descname">compute_Responses</tt><big>(</big><em>image</em>, <em>filter_bank</em><big>)</big><a class="reference internal" href="_modules/gabor_filter.html#compute_Responses"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gabor_filter.compute_Responses" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function compute the filtering responses of given image and the filter bank</p>
+<dl class="docutils">
+<dt>image: numpy array</dt>
+<dd>Input image</dd>
+<dt>filter_bank:</dt>
+<dd>Input filter bank(a list of kernel set with different parameters)</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gabor_filter.creat_FilterBank">
+<tt class="descclassname">gabor_filter.</tt><tt class="descname">creat_FilterBank</tt><big>(</big><em>norientation</em>, <em>sigmas</em>, <em>frequencies</em>, <em>gammas</em><big>)</big><a class="reference internal" href="_modules/gabor_filter.html#creat_FilterBank"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gabor_filter.creat_FilterBank" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function creats the Gabor filter bank with given parameters.</p>
+<dl class="docutils">
+<dt>norientation: integer list</dt>
+<dd>number of orientations</dd>
+<dt>sigmas: float lists</dt>
+<dd>a list of scales of the kernels</dd>
+<dt>frequencies: float list</dt>
+<dd>a list of the wavelength/frequency of the kernels</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gabor_filter.creat_Gabor_Kernels">
+<tt class="descclassname">gabor_filter.</tt><tt class="descname">creat_Gabor_Kernels</tt><big>(</big><em>norientation</em>, <em>sigma</em>, <em>frequency</em>, <em>gamma</em><big>)</big><a class="reference internal" href="_modules/gabor_filter.html#creat_Gabor_Kernels"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gabor_filter.creat_Gabor_Kernels" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function creats the Gabor kernels with given parameters.</p>
+<dl class="docutils">
+<dt>norientation: integer</dt>
+<dd>number of orientations</dd>
+<dt>sigmm: float</dt>
+<dd>scale of the kernel</dd>
+<dt>frequency: float</dt>
+<dd>wavelength/frequency of the kernel</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gabor_filter.fftconvolve">
+<tt class="descclassname">gabor_filter.</tt><tt class="descname">fftconvolve</tt><big>(</big><em>image</em>, <em>kernel</em><big>)</big><a class="reference internal" href="_modules/gabor_filter.html#fftconvolve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gabor_filter.fftconvolve" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function calculate 2d convolution using fft</p>
+<dl class="docutils">
+<dt>image: numpy array</dt>
+<dd>input image</dd>
+<dt>kernel:</dt>
+<dd>input kernel</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="gabor_filter.plot_FilterBank">
+<tt class="descclassname">gabor_filter.</tt><tt class="descname">plot_FilterBank</tt><big>(</big><em>filter_bank</em><big>)</big><a class="reference internal" href="_modules/gabor_filter.html#plot_FilterBank"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gabor_filter.plot_FilterBank" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="gabor_filter.plot_Kernels">
+<tt class="descclassname">gabor_filter.</tt><tt class="descname">plot_Kernels</tt><big>(</big><em>kernels</em><big>)</big><a class="reference internal" href="_modules/gabor_filter.html#plot_Kernels"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gabor_filter.plot_Kernels" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="gabor_filter.plot_Response">
+<tt class="descclassname">gabor_filter.</tt><tt class="descname">plot_Response</tt><big>(</big><em>response</em><big>)</big><a class="reference internal" href="_modules/gabor_filter.html#plot_Response"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gabor_filter.plot_Response" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="initial_detection.html"
+                        title="previous chapter">3.1. Mass Initial Detection</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="Response_Analysis.html"
+                        title="next chapter">3.1.2. Response_Analysis module</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/gabor_filter.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Response_Analysis.html" title="3.1.2. Response_Analysis module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="initial_detection.html" title="3.1. Mass Initial Detection"
+             >previous</a> |</li>
+        <li><a href="Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="mass_detection.html" >3. Mass Detection</a> &raquo;</li>
+          <li><a href="initial_detection.html" >3.1. Mass Initial Detection</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, SAP.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

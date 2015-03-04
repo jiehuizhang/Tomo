@@ -1,0 +1,309 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>TPSpline &mdash; Tomosynthesis Machine Learning 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Tomosynthesis Machine Learning 1.0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for TPSpline</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;Thin plate spline interpolation.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">cv2</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+
+<div class="viewcode-block" id="TPSpline"><a class="viewcode-back" href="../TPSpline.html#TPSpline.TPSpline">[docs]</a><span class="k">class</span> <span class="nc">TPSpline</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span> <span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">psrc</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pdst</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">lenspline</span> <span class="o">=</span> <span class="bp">None</span>     
+        <span class="bp">self</span><span class="o">.</span><span class="n">mapx</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mapy</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cMatrix</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">mx</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">my</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;TPSpline&#39;</span>
+
+<div class="viewcode-block" id="TPSpline.setCorrespondences"><a class="viewcode-back" href="../TPSpline.html#TPSpline.TPSpline.setCorrespondences">[docs]</a>    <span class="k">def</span> <span class="nf">setCorrespondences</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pS</span><span class="p">,</span> <span class="n">pD</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the fiducial points for registration.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        pS : list</span>
+<span class="sd">            Lists of control point from source image</span>
+<span class="sd">        pD : list</span>
+<span class="sd">            Lists of control point from destination image</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pS</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pD</span><span class="p">):</span>
+            <span class="k">print</span> <span class="s">&#39;Correspondences not consistent !&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">psrc</span> <span class="o">=</span> <span class="n">pS</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pdst</span> <span class="o">=</span> <span class="n">pD</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">lenspline</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">pS</span><span class="p">),</span><span class="nb">len</span><span class="p">(</span><span class="n">pD</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="TPSpline.fktU"><a class="viewcode-back" href="../TPSpline.html#TPSpline.TPSpline.fktU">[docs]</a>    <span class="k">def</span> <span class="nf">fktU</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;The U = f(r) function&quot;&quot;&quot;</span>
+
+        <span class="n">r</span> <span class="o">=</span> <span class="p">(</span><span class="n">p1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">p2</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">p1</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">p2</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span>
+
+        <span class="k">if</span> <span class="n">r</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.0</span>
+        
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">r</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+                 
+</div>
+<div class="viewcode-block" id="TPSpline.computeSplineCoeffs"><a class="viewcode-back" href="../TPSpline.html#TPSpline.TPSpline.computeSplineCoeffs">[docs]</a>    <span class="k">def</span> <span class="nf">computeSplineCoeffs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lamda</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Solve the linear system&quot;&quot;&quot;</span>
+
+        <span class="n">dim</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lenspline</span>
+
+        <span class="c"># initialize matrices</span>
+        <span class="n">V</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">dim</span><span class="p">,</span><span class="n">n</span><span class="o">+</span><span class="n">dim</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">)</span>
+        <span class="n">P</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">n</span><span class="p">,</span><span class="n">dim</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">)</span>
+        <span class="n">K</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">*</span><span class="n">lamda</span>
+        <span class="n">L</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n</span><span class="o">+</span><span class="n">dim</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">n</span><span class="o">+</span><span class="n">dim</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">);</span>
+        
+        <span class="c"># fill up K</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lenspline</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lenspline</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">j</span><span class="p">:</span>
+                    <span class="n">K</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fktU</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psrc</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">psrc</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+
+        <span class="c"># fill up P</span>
+        <span class="n">P</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psrc</span><span class="p">)[:,</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">P</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psrc</span><span class="p">)[:,</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="c"># fill up L</span>
+        <span class="n">L</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">n</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">K</span>
+        <span class="n">L</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span><span class="n">n</span><span class="o">+</span><span class="n">dim</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">P</span>
+        <span class="n">L</span><span class="p">[</span><span class="n">n</span><span class="p">:</span><span class="n">n</span><span class="o">+</span><span class="n">dim</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">P</span><span class="p">)</span>
+
+        <span class="c"># fill up V</span>
+        <span class="n">V</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">:</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pdst</span><span class="p">)[:,</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">V</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">:</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pdst</span><span class="p">)[:,</span><span class="mi">1</span><span class="p">]</span>
+
+        
+        <span class="n">invL</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">L</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cMatrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">invL</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">V</span><span class="p">))</span>
+        <span class="k">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">cMatrix</span>
+                          
+</div>
+<div class="viewcode-block" id="TPSpline.interpolate"><a class="viewcode-back" href="../TPSpline.html#TPSpline.TPSpline.interpolate">[docs]</a>    <span class="k">def</span> <span class="nf">interpolate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">p</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Compute displacement based on computed splie coefficients&quot;&quot;&quot;</span>
+       
+        <span class="n">k1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cMatrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">3</span>
+        <span class="n">kx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cMatrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">2</span>
+        <span class="n">ky</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cMatrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span>
+
+        <span class="n">a1</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">ay</span><span class="p">,</span> <span class="n">cTmp</span><span class="p">,</span> <span class="n">uTmp</span><span class="p">,</span> <span class="n">tmp_i</span><span class="p">,</span> <span class="n">tmp_ii</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="n">y</span><span class="p">,</span> <span class="n">x</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+            <span class="n">a1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cMatrix</span><span class="p">[</span><span class="n">k1</span><span class="p">,</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cMatrix</span><span class="p">[</span><span class="n">kx</span><span class="p">,</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">ay</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cMatrix</span><span class="p">[</span><span class="n">ky</span><span class="p">,</span><span class="n">i</span><span class="p">]</span>
+
+            <span class="n">tmp_i</span> <span class="o">=</span> <span class="n">a1</span> <span class="o">+</span> <span class="n">ax</span> <span class="o">*</span> <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">ay</span> <span class="o">*</span> <span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">tmp_ii</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lenspline</span><span class="p">):</span>
+                <span class="n">cTmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cMatrix</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">uTmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fktU</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psrc</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">p</span><span class="p">)</span>
+                <span class="n">tmp_ii</span> <span class="o">=</span> <span class="n">tmp_ii</span> <span class="o">+</span> <span class="p">(</span><span class="n">cTmp</span> <span class="o">*</span> <span class="n">uTmp</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">y</span> <span class="o">=</span> <span class="n">tmp_i</span> <span class="o">+</span> <span class="n">tmp_ii</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="n">tmp_i</span> <span class="o">+</span> <span class="n">tmp_ii</span>
+                
+        <span class="n">interP</span> <span class="o">=</span> <span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="n">x</span><span class="p">)</span>
+        <span class="c">#print interP</span>
+        <span class="k">return</span> <span class="n">interP</span>
+</div>
+<div class="viewcode-block" id="TPSpline.interpolate_fast"><a class="viewcode-back" href="../TPSpline.html#TPSpline.TPSpline.interpolate_fast">[docs]</a>    <span class="k">def</span> <span class="nf">interpolate_fast</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">p</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;A faster version of Compute displacement based on computed</span>
+<span class="sd">        splie coefficients&quot;&quot;&quot;</span>
+
+        <span class="n">psudo_p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
+
+        <span class="n">dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cMatrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>        
+        <span class="n">aff_coeff_x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cMatrix</span><span class="p">[(</span><span class="n">dim</span> <span class="o">-</span> <span class="mi">3</span><span class="p">):</span><span class="n">dim</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">aff_coeff_y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cMatrix</span><span class="p">[(</span><span class="n">dim</span> <span class="o">-</span> <span class="mi">3</span><span class="p">):</span><span class="n">dim</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">distances</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">fktU</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psrc</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lenspline</span><span class="p">)]</span>
+        <span class="n">distances</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">distances</span><span class="p">)</span>
+
+        <span class="n">tmp_i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">aff_coeff_x</span><span class="o">*</span><span class="n">psudo_p</span><span class="p">)</span>
+        <span class="n">tmp_ii</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cMatrix</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">lenspline</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">distances</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">tmp_i</span> <span class="o">+</span> <span class="n">tmp_ii</span>
+
+        <span class="n">tmp_i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">aff_coeff_y</span><span class="o">*</span><span class="n">psudo_p</span><span class="p">)</span>
+        <span class="n">tmp_ii</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cMatrix</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">lenspline</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">distances</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">tmp_i</span> <span class="o">+</span> <span class="n">tmp_ii</span>
+
+        <span class="n">intP</span> <span class="o">=</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="n">x</span><span class="p">)</span>
+        <span class="c">#print intP</span>
+        <span class="k">return</span> <span class="n">intP</span> 
+</div>
+<div class="viewcode-block" id="TPSpline.warpImage"><a class="viewcode-back" href="../TPSpline.html#TPSpline.TPSpline.warpImage">[docs]</a>    <span class="k">def</span> <span class="nf">warpImage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">lamda</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Warpiing the source image&quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">computeSplineCoeffs</span><span class="p">(</span><span class="n">lamda</span><span class="p">)</span>
+
+        <span class="k">print</span> <span class="s">&#39;done compute spline coeeficients&#39;</span>
+
+        <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
+        <span class="k">print</span> <span class="n">start</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">computeMaps</span><span class="p">(</span><span class="n">src</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">elapsed</span> <span class="o">=</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
+        <span class="k">print</span> <span class="nb">str</span><span class="p">(</span><span class="n">elapsed</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;s&#39;</span>
+
+        <span class="k">print</span> <span class="s">&#39;done compute map&#39;</span>
+
+        <span class="n">warped</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">remap</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">my</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mx</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">INTER_CUBIC</span><span class="p">)</span>
+
+        <span class="k">print</span> <span class="s">&#39;done warping&#39;</span>
+
+        <span class="k">return</span> <span class="n">warped</span>
+ </div>
+<div class="viewcode-block" id="TPSpline.computeMaps"><a class="viewcode-back" href="../TPSpline.html#TPSpline.TPSpline.computeMaps">[docs]</a>    <span class="k">def</span> <span class="nf">computeMaps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">datasize</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Compute dispalcement for all pixels&quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">mx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">datasize</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">my</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">datasize</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">datasize</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">datasize</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+                <span class="n">intP</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">interpolate</span><span class="p">((</span><span class="n">col</span><span class="p">,</span><span class="n">row</span><span class="p">))</span>              
+                <span class="bp">self</span><span class="o">.</span><span class="n">mx</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">intP</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">my</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">intP</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+</div>
+<div class="viewcode-block" id="TPSpline.computeMaps_fast"><a class="viewcode-back" href="../TPSpline.html#TPSpline.TPSpline.computeMaps_fast">[docs]</a>    <span class="k">def</span> <span class="nf">computeMaps_fast</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">datasize</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;A faster version of compute dispalcement for all pixels&quot;&quot;&quot;</span>
+
+        <span class="n">intPs</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">interpolate_fast</span><span class="p">((</span><span class="n">col</span><span class="p">,</span><span class="n">row</span><span class="p">))</span><span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">datasize</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">datasize</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>             
+        <span class="n">intPs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">intPs</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">mx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">intPs</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">datasize</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">my</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">intPs</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">datasize</span><span class="p">))</span>
+        
+                
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        </div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, SAP.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

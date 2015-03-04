@@ -1,0 +1,429 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>morphsnakes &mdash; Tomosynthesis Machine Learning 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Tomosynthesis Machine Learning 1.0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for morphsnakes</h1><div class="highlight"><pre>
+<span class="c"># -*- coding: utf-8 -*-</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This is a Python implementation of the algorithms introduced in the paper</span>
+
+<span class="sd">  Márquez-Neila, P., Baumela, L., Álvarez, L., &quot;A morphological approach</span>
+<span class="sd">  to curvature-based evolution of curves and surfaces&quot;. IEEE Transactions</span>
+<span class="sd">  on Pattern Analysis and Machine Intelligence (PAMI), 2013.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="n">__author__</span> <span class="o">=</span> <span class="s">&quot;P. Márquez Neila &lt;p.mneila@upm.es&gt;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">cycle</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">tiffLib</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">ndimage</span>
+<span class="kn">from</span> <span class="nn">scipy.ndimage</span> <span class="kn">import</span> <span class="n">binary_dilation</span><span class="p">,</span> <span class="n">binary_erosion</span><span class="p">,</span> \
+                        <span class="n">gaussian_filter</span><span class="p">,</span> <span class="n">gaussian_gradient_magnitude</span>
+
+<span class="c">#from matplotlib import pyplot as ppl</span>
+
+<div class="viewcode-block" id="fcycle"><a class="viewcode-back" href="../morphsnakes.html#morphsnakes.fcycle">[docs]</a><span class="k">class</span> <span class="nc">fcycle</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iterable</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Call functions from the iterable each time it is called.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">funcs</span> <span class="o">=</span> <span class="n">cycle</span><span class="p">(</span><span class="n">iterable</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">funcs</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    
+
+<span class="c"># SI and IS operators for 2D and 3D.</span></div>
+<span class="n">_P2</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]]</span><span class="o">*</span><span class="mi">3</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">flipud</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">3</span><span class="p">)),</span> <span class="n">np</span><span class="o">.</span><span class="n">rot90</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]]</span><span class="o">*</span><span class="mi">3</span><span class="p">)]</span>
+<span class="n">_P3</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">9</span><span class="p">)]</span>
+
+<span class="n">_P3</span><span class="p">[</span><span class="mi">0</span><span class="p">][:,:,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">_P3</span><span class="p">[</span><span class="mi">1</span><span class="p">][:,</span><span class="mi">1</span><span class="p">,:]</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">_P3</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">1</span><span class="p">,:,:]</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">_P3</span><span class="p">[</span><span class="mi">3</span><span class="p">][:,[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">_P3</span><span class="p">[</span><span class="mi">4</span><span class="p">][:,[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">],[</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">_P3</span><span class="p">[</span><span class="mi">5</span><span class="p">][[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">],:,[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">_P3</span><span class="p">[</span><span class="mi">6</span><span class="p">][[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">],:,[</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">_P3</span><span class="p">[</span><span class="mi">7</span><span class="p">][[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">],:]</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">_P3</span><span class="p">[</span><span class="mi">8</span><span class="p">][[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">],[</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],:]</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="n">_aux</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">0</span><span class="p">))</span>
+<div class="viewcode-block" id="SI"><a class="viewcode-back" href="../morphsnakes.html#morphsnakes.SI">[docs]</a><span class="k">def</span> <span class="nf">SI</span><span class="p">(</span><span class="n">u</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;SI operator.&quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">_aux</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">ndim</span><span class="p">(</span><span class="n">u</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">P</span> <span class="o">=</span> <span class="n">_P2</span>
+    <span class="k">elif</span> <span class="n">np</span><span class="o">.</span><span class="n">ndim</span><span class="p">(</span><span class="n">u</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="n">P</span> <span class="o">=</span> <span class="n">_P3</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="s">&quot;u has an invalid number of dimensions (should be 2 or 3)&quot;</span>
+    
+    <span class="k">if</span> <span class="n">u</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">_aux</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+        <span class="n">_aux</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">P</span><span class="p">),)</span> <span class="o">+</span> <span class="n">u</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">P</span><span class="p">)):</span>
+        <span class="n">_aux</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">binary_erosion</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">P</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+    
+    <span class="k">return</span> <span class="n">_aux</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="IS"><a class="viewcode-back" href="../morphsnakes.html#morphsnakes.IS">[docs]</a><span class="k">def</span> <span class="nf">IS</span><span class="p">(</span><span class="n">u</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;IS operator.&quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">_aux</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">ndim</span><span class="p">(</span><span class="n">u</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">P</span> <span class="o">=</span> <span class="n">_P2</span>
+    <span class="k">elif</span> <span class="n">np</span><span class="o">.</span><span class="n">ndim</span><span class="p">(</span><span class="n">u</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="n">P</span> <span class="o">=</span> <span class="n">_P3</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="s">&quot;u has an invalid number of dimensions (should be 2 or 3)&quot;</span>
+    
+    <span class="k">if</span> <span class="n">u</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">_aux</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+        <span class="n">_aux</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">P</span><span class="p">),)</span> <span class="o">+</span> <span class="n">u</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">P</span><span class="p">)):</span>
+        <span class="n">_aux</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">binary_dilation</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">P</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+    
+    <span class="k">return</span> <span class="n">_aux</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="c"># SIoIS operator.</span></div>
+<span class="n">SIoIS</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">u</span><span class="p">:</span> <span class="n">SI</span><span class="p">(</span><span class="n">IS</span><span class="p">(</span><span class="n">u</span><span class="p">))</span>
+<span class="n">ISoSI</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">u</span><span class="p">:</span> <span class="n">IS</span><span class="p">(</span><span class="n">SI</span><span class="p">(</span><span class="n">u</span><span class="p">))</span>
+<span class="n">curvop</span> <span class="o">=</span> <span class="n">fcycle</span><span class="p">([</span><span class="n">SIoIS</span><span class="p">,</span> <span class="n">ISoSI</span><span class="p">])</span>
+
+<span class="c"># Stopping factors (function g(I) in the paper).</span>
+<div class="viewcode-block" id="gborders"><a class="viewcode-back" href="../morphsnakes.html#morphsnakes.gborders">[docs]</a><span class="k">def</span> <span class="nf">gborders</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Stopping criterion for image borders.&quot;&quot;&quot;</span>
+    <span class="c"># The norm of the gradient.</span>
+    <span class="n">gausgradm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">)</span>
+    <span class="n">gaussian_gradient_magnitude</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="n">gausgradm</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;constant&#39;</span><span class="p">)</span>
+	
+    <span class="n">thr</span> <span class="o">=</span> <span class="mi">2500</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">gausgradm</span> <span class="o">&gt;</span> <span class="n">thr</span>
+    <span class="n">gausgradm</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">thr</span>
+    <span class="k">return</span> <span class="mf">1.0</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">alpha</span><span class="o">*</span><span class="n">gausgradm</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="glines"><a class="viewcode-back" href="../morphsnakes.html#morphsnakes.glines">[docs]</a><span class="k">def</span> <span class="nf">glines</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Stopping criterion for image black lines.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">gaussian_filter</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="MorphACWE"><a class="viewcode-back" href="../morphsnakes.html#morphsnakes.MorphACWE">[docs]</a><span class="k">class</span> <span class="nc">MorphACWE</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Morphological ACWE based on the Chan-Vese energy functional.&quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">smoothing</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">lambda1</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">lambda2</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create a Morphological ACWE solver.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        data : ndarray</span>
+<span class="sd">            The image data.</span>
+<span class="sd">        smoothing : scalar</span>
+<span class="sd">            The number of repetitions of the smoothing step (the</span>
+<span class="sd">            curv operator) in each iteration. In other terms,</span>
+<span class="sd">            this is the strength of the smoothing. This is the</span>
+<span class="sd">            parameter µ.</span>
+<span class="sd">        lambda1, lambda2 : scalars</span>
+<span class="sd">            Relative importance of the inside pixels (lambda1)</span>
+<span class="sd">            against the outside pixels (lambda2).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_u</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">smoothing</span> <span class="o">=</span> <span class="n">smoothing</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lambda1</span> <span class="o">=</span> <span class="n">lambda1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lambda2</span> <span class="o">=</span> <span class="n">lambda2</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
+    
+<div class="viewcode-block" id="MorphACWE.set_levelset"><a class="viewcode-back" href="../morphsnakes.html#morphsnakes.MorphACWE.set_levelset">[docs]</a>    <span class="k">def</span> <span class="nf">set_levelset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_u</span><span class="p">[</span><span class="n">u</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_u</span><span class="p">[</span><span class="n">u</span><span class="o">&lt;=</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    </div>
+    <span class="n">levelset</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="k">lambda</span> <span class="bp">self</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_u</span><span class="p">,</span>
+                        <span class="n">set_levelset</span><span class="p">,</span>
+                        <span class="n">doc</span><span class="o">=</span><span class="s">&quot;The level set embedding function (u).&quot;</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="MorphACWE.step"><a class="viewcode-back" href="../morphsnakes.html#morphsnakes.MorphACWE.step">[docs]</a>    <span class="k">def</span> <span class="nf">step</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Perform a single step of the morphological Chan-Vese evolution.&quot;&quot;&quot;</span>
+        <span class="c"># Assign attributes to local variables for convenience.</span>
+        <span class="n">u</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_u</span>
+        
+        <span class="k">if</span> <span class="n">u</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="s">&quot;the levelset function is not set (use set_levelset)&quot;</span>
+        
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+        
+        <span class="c"># Determine c0 and c1.</span>
+        <span class="n">inside</span> <span class="o">=</span> <span class="n">u</span><span class="o">&gt;</span><span class="mi">0</span>
+        <span class="n">outside</span> <span class="o">=</span> <span class="n">u</span><span class="o">&lt;=</span><span class="mi">0</span>
+        <span class="n">c0</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">outside</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">outside</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+        <span class="n">c1</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">inside</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">inside</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+        
+        <span class="c"># Image attachment.</span>
+        <span class="n">dres</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">gradient</span><span class="p">(</span><span class="n">u</span><span class="p">))</span>
+        <span class="n">abs_dres</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">dres</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="c">#aux = abs_dres * (c0 - c1) * (c0 + c1 - 2*data)</span>
+        <span class="n">aux</span> <span class="o">=</span> <span class="n">abs_dres</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lambda1</span><span class="o">*</span><span class="p">(</span><span class="n">data</span> <span class="o">-</span> <span class="n">c1</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">lambda2</span><span class="o">*</span><span class="p">(</span><span class="n">data</span> <span class="o">-</span> <span class="n">c0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        
+        <span class="n">res</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+        <span class="n">res</span><span class="p">[</span><span class="n">aux</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">res</span><span class="p">[</span><span class="n">aux</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        
+        <span class="c"># Smoothing.</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">smoothing</span><span class="p">):</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">curvop</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_u</span> <span class="o">=</span> <span class="n">res</span>
+    </div>
+<div class="viewcode-block" id="MorphACWE.run"><a class="viewcode-back" href="../morphsnakes.html#morphsnakes.MorphACWE.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iterations</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Run several iterations of the morphological Chan-Vese method.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">iterations</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+    
+</div></div>
+<div class="viewcode-block" id="MorphGAC"><a class="viewcode-back" href="../morphsnakes.html#morphsnakes.MorphGAC">[docs]</a><span class="k">class</span> <span class="nc">MorphGAC</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Morphological GAC based on the Geodesic Active Contours.&quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">smoothing</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">balloon</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create a Morphological GAC solver.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        data : array-like</span>
+<span class="sd">            The stopping criterion g(I). See functions gborders and glines.</span>
+<span class="sd">        smoothing : scalar</span>
+<span class="sd">            The number of repetitions of the smoothing step in each</span>
+<span class="sd">            iteration. This is the parameter µ.</span>
+<span class="sd">        threshold : scalar</span>
+<span class="sd">            The threshold that determines which areas are affected</span>
+<span class="sd">            by the morphological balloon. This is the parameter θ.</span>
+<span class="sd">        balloon : scalar</span>
+<span class="sd">            The strength of the morphological balloon. This is the parameter ν.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_u</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_v</span> <span class="o">=</span> <span class="n">balloon</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_theta</span> <span class="o">=</span> <span class="n">threshold</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">smoothing</span> <span class="o">=</span> <span class="n">smoothing</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="MorphGAC.set_levelset"><a class="viewcode-back" href="../morphsnakes.html#morphsnakes.MorphGAC.set_levelset">[docs]</a>    <span class="k">def</span> <span class="nf">set_levelset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_u</span><span class="p">[</span><span class="n">u</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_u</span><span class="p">[</span><span class="n">u</span><span class="o">&lt;=</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    </div>
+<div class="viewcode-block" id="MorphGAC.set_balloon"><a class="viewcode-back" href="../morphsnakes.html#morphsnakes.MorphGAC.set_balloon">[docs]</a>    <span class="k">def</span> <span class="nf">set_balloon</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_v</span> <span class="o">=</span> <span class="n">v</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_mask</span><span class="p">()</span>
+    </div>
+<div class="viewcode-block" id="MorphGAC.set_threshold"><a class="viewcode-back" href="../morphsnakes.html#morphsnakes.MorphGAC.set_threshold">[docs]</a>    <span class="k">def</span> <span class="nf">set_threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">theta</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_theta</span> <span class="o">=</span> <span class="n">theta</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_mask</span><span class="p">()</span>
+    </div>
+<div class="viewcode-block" id="MorphGAC.set_data"><a class="viewcode-back" href="../morphsnakes.html#morphsnakes.MorphGAC.set_data">[docs]</a>    <span class="k">def</span> <span class="nf">set_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ddata</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">gradient</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_mask</span><span class="p">()</span>
+        <span class="c"># The structure element for binary dilation and erosion.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">structure</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">3</span><span class="p">,)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">ndim</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+    </div>
+    <span class="k">def</span> <span class="nf">_update_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pre-compute masks for speed.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_threshold_mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_theta</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_threshold_mask_v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_theta</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_v</span><span class="p">)</span>
+    
+    <span class="n">levelset</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="k">lambda</span> <span class="bp">self</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_u</span><span class="p">,</span>
+                        <span class="n">set_levelset</span><span class="p">,</span>
+                        <span class="n">doc</span><span class="o">=</span><span class="s">&quot;The level set embedding function (u).&quot;</span><span class="p">)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="k">lambda</span> <span class="bp">self</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span>
+                        <span class="n">set_data</span><span class="p">,</span>
+                        <span class="n">doc</span><span class="o">=</span><span class="s">&quot;The data that controls the snake evolution (the image or g(I)).&quot;</span><span class="p">)</span>
+    <span class="n">balloon</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="k">lambda</span> <span class="bp">self</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_v</span><span class="p">,</span>
+                        <span class="n">set_balloon</span><span class="p">,</span>
+                        <span class="n">doc</span><span class="o">=</span><span class="s">&quot;The morphological balloon parameter (ν (nu, not v)).&quot;</span><span class="p">)</span>
+    <span class="n">threshold</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="k">lambda</span> <span class="bp">self</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_theta</span><span class="p">,</span>
+                        <span class="n">set_threshold</span><span class="p">,</span>
+                        <span class="n">doc</span><span class="o">=</span><span class="s">&quot;The threshold value (θ).&quot;</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="MorphGAC.step"><a class="viewcode-back" href="../morphsnakes.html#morphsnakes.MorphGAC.step">[docs]</a>    <span class="k">def</span> <span class="nf">step</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Perform a single step of the morphological snake evolution.&quot;&quot;&quot;</span>
+        <span class="c"># Assign attributes to local variables for convenience.</span>
+        <span class="n">u</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_u</span>
+        <span class="n">gI</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span>
+        <span class="n">dgI</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ddata</span>
+        <span class="n">theta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_theta</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_v</span>
+        
+        <span class="k">if</span> <span class="n">u</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="s">&quot;the levelset is not set (use set_levelset)&quot;</span>
+        
+        <span class="n">res</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+        
+        <span class="c"># Balloon.</span>
+        <span class="k">if</span> <span class="n">v</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">aux</span> <span class="o">=</span> <span class="n">binary_dilation</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">structure</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">v</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">aux</span> <span class="o">=</span> <span class="n">binary_erosion</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">structure</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">v</span><span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">res</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_threshold_mask_v</span><span class="p">]</span> <span class="o">=</span> <span class="n">aux</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_threshold_mask_v</span><span class="p">]</span>
+        
+        <span class="c"># Image attachment.</span>
+        <span class="n">aux</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+        <span class="n">dres</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">gradient</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">el1</span><span class="p">,</span> <span class="n">el2</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">dgI</span><span class="p">,</span> <span class="n">dres</span><span class="p">):</span>
+            <span class="n">aux</span> <span class="o">+=</span> <span class="n">el1</span><span class="o">*</span><span class="n">el2</span>
+        <span class="n">res</span><span class="p">[</span><span class="n">aux</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">res</span><span class="p">[</span><span class="n">aux</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        
+        <span class="c"># Smoothing.</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">smoothing</span><span class="p">):</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">curvop</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_u</span> <span class="o">=</span> <span class="n">res</span>
+    </div>
+<div class="viewcode-block" id="MorphGAC.run"><a class="viewcode-back" href="../morphsnakes.html#morphsnakes.MorphGAC.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iterations</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Run several iterations of the morphological snakes method.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">iterations</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+    
+</div></div>
+<div class="viewcode-block" id="evolve_visual"><a class="viewcode-back" href="../morphsnakes.html#morphsnakes.evolve_visual">[docs]</a><span class="k">def</span> <span class="nf">evolve_visual</span><span class="p">(</span><span class="n">msnake</span><span class="p">,</span> <span class="n">visulization</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> <span class="n">levelset</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">num_iters</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">background</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Visual evolution of a morphological snake.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    msnake : MorphGAC or MorphACWE instance</span>
+<span class="sd">        The morphological snake solver.</span>
+<span class="sd">    levelset : array-like, optional</span>
+<span class="sd">        If given, the levelset of the solver is initialized to this. If not</span>
+<span class="sd">        given, the evolution will use the levelset already set in msnake.</span>
+<span class="sd">    num_iters : int, optional</span>
+<span class="sd">        The number of iterations.</span>
+<span class="sd">    background : array-like, optional</span>
+<span class="sd">        If given, background will be shown behind the contours instead of</span>
+<span class="sd">        msnake.data.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    
+    <span class="k">if</span> <span class="n">levelset</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">msnake</span><span class="o">.</span><span class="n">levelset</span> <span class="o">=</span> <span class="n">levelset</span>
+
+    <span class="k">if</span> <span class="n">visulization</span> <span class="o">==</span> <span class="bp">True</span><span class="p">:</span>
+        <span class="c"># Prepare the visual environment.</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">ppl</span><span class="o">.</span><span class="n">gcf</span><span class="p">()</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">clf</span><span class="p">()</span>
+        <span class="n">ax1</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">background</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">ax1</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">msnake</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">ppl</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">gray</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ax1</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">background</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">ppl</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">gray</span><span class="p">)</span>
+        <span class="n">ax1</span><span class="o">.</span><span class="n">contour</span><span class="p">(</span><span class="n">msnake</span><span class="o">.</span><span class="n">levelset</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">],</span> <span class="n">colors</span><span class="o">=</span><span class="s">&#39;r&#39;</span><span class="p">)</span>
+    
+        <span class="n">ax2</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">ax_u</span> <span class="o">=</span> <span class="n">ax2</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">msnake</span><span class="o">.</span><span class="n">levelset</span><span class="p">)</span>
+        <span class="n">ppl</span><span class="o">.</span><span class="n">pause</span><span class="p">(</span><span class="mf">0.001</span><span class="p">)</span>
+    
+    <span class="c"># Iterate.</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">num_iters</span><span class="p">):</span>
+        <span class="c"># Evolve.</span>
+        <span class="n">msnake</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+        
+        <span class="c"># Update figure.</span>
+        <span class="k">if</span> <span class="n">visulization</span> <span class="o">==</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="k">del</span> <span class="n">ax1</span><span class="o">.</span><span class="n">collections</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">ax1</span><span class="o">.</span><span class="n">contour</span><span class="p">(</span><span class="n">msnake</span><span class="o">.</span><span class="n">levelset</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">],</span> <span class="n">colors</span><span class="o">=</span><span class="s">&#39;r&#39;</span><span class="p">)</span>
+            <span class="n">ax_u</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="n">msnake</span><span class="o">.</span><span class="n">levelset</span><span class="p">)</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+            <span class="c">#ppl.pause(0.001)</span>
+    
+    <span class="c"># Return the last levelset.</span>
+    <span class="k">return</span> <span class="n">msnake</span><span class="o">.</span><span class="n">levelset</span>
+</pre></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, SAP.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>test_mass_extraction &mdash; Tomosynthesis Machine Learning 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Tomosynthesis Machine Learning 1.0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for test_mass_extraction</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;This script shows how to run suspicious mass extraction start from raw</span>
+<span class="sd">images. Preprocessing are included within the parallel process.&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+<span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Pool</span>
+
+<span class="kn">import</span> <span class="nn">ImageIO</span>
+<span class="kn">import</span> <span class="nn">TImage</span>
+<span class="kn">import</span> <span class="nn">mass3Dextraction</span> <span class="kn">as</span> <span class="nn">mass3d</span>
+
+
+<div class="viewcode-block" id="test_func"><a class="viewcode-back" href="../test_mass_extraction.html#test_mass_extraction.test_func">[docs]</a><span class="k">def</span> <span class="nf">test_func</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Please specify the image tiff stack directory, file name and output</span>
+<span class="sd">    path. Extracted masses list will be save in a workspace file for further use.</span>
+<span class="sd">    Also please specify how many cores will be allocated for the parallel process.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+
+    <span class="n">dataPath</span> <span class="o">=</span> <span class="s">&#39;/home/yanbin/Tomosynthesis/data/tiffs_3d/5016/&#39;</span>
+    <span class="n">outputPath</span> <span class="o">=</span> <span class="s">&#39;/home/yanbin/Tomosynthesis/script_test/&#39;</span>
+    <span class="n">fileName</span> <span class="o">=</span> <span class="s">&#39;5016EMML08.tif&#39;</span>
+
+    <span class="c">## load image data</span>
+    <span class="n">im</span> <span class="o">=</span> <span class="n">ImageIO</span><span class="o">.</span><span class="n">imReader</span><span class="p">(</span><span class="n">dataPath</span><span class="p">,</span><span class="n">fileName</span><span class="p">,</span> <span class="s">&#39;tif&#39;</span><span class="p">)</span>
+
+    <span class="c">## allocate cpu source</span>
+    <span class="n">pool</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="mi">6</span><span class="p">)</span>
+    <span class="n">params</span> <span class="o">=</span><span class="p">[(</span><span class="n">i</span><span class="p">,</span><span class="n">im</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">size_2</span><span class="p">)]</span>
+
+    <span class="c">## run in parallel</span>
+    <span class="n">sliceList</span> <span class="o">=</span> <span class="p">[]</span>    
+    <span class="n">sliceList</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">mass3d</span><span class="o">.</span><span class="n">parallelWrapper</span><span class="p">,</span><span class="n">params</span><span class="p">)</span>
+    
+    <span class="c">## save the workspace</span>
+    <span class="n">output</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">outputPath</span> <span class="o">+</span> <span class="s">&#39;suspicious.pkl&#39;</span><span class="p">,</span> <span class="s">&#39;wb&#39;</span><span class="p">)</span>
+    <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">sliceList</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span>
+    <span class="n">output</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+
+    <span class="n">test_func</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, SAP.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

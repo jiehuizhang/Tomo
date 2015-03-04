@@ -1,0 +1,448 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>TPatch &mdash; Tomosynthesis Machine Learning 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Tomosynthesis Machine Learning 1.0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for TPatch</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">linalg</span> <span class="k">as</span> <span class="n">LA</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">sqrt</span><span class="p">,</span> <span class="n">pi</span><span class="p">,</span> <span class="n">arctan2</span><span class="p">,</span> <span class="n">cos</span><span class="p">,</span> <span class="n">sin</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">stats</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">fftpack</span>
+<span class="kn">from</span> <span class="nn">sklearn</span> <span class="kn">import</span> <span class="n">linear_model</span>
+<span class="kn">import</span> <span class="nn">scipy.ndimage.filters</span> <span class="kn">as</span> <span class="nn">filters</span>
+<span class="kn">import</span> <span class="nn">histEqualization</span>
+<span class="kn">import</span> <span class="nn">tiffLib</span>
+<span class="kn">import</span> <span class="nn">math</span>
+
+<span class="kn">import</span> <span class="nn">histEqualization</span>
+<span class="kn">import</span> <span class="nn">AT_denoising</span>
+<span class="kn">import</span> <span class="nn">activeContourSegmentation</span> <span class="kn">as</span> <span class="nn">acSeg</span>
+<span class="kn">import</span> <span class="nn">morphsnakes</span>
+
+<span class="k">class</span> <span class="nc">TPatch</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Image patch class. (A region of interest)</span>
+<div class="viewcode-block" id="TPatch"><a class="viewcode-back" href="../TPatch.html#TPatch.TPatch">[docs]</a>
+<span class="sd">    Variables</span>
+<span class="sd">    ----------</span>
+<span class="sd">    pdata: 2D numpy array</span>
+<span class="sd">        The patch data</span>
+<span class="sd">    image_center: a tuple of two intergers</span>
+<span class="sd">        The (x,y) coordinate in the oroginal image</span>
+<span class="sd">    patch_center: a tuple of two intergers</span>
+<span class="sd">        The (x,y) coordinate of the center of the patch</span>
+<span class="sd">    data_size: a tuple of two intergers</span>
+<span class="sd">        The shape of hte data array</span>
+<span class="sd">    patch_size: integer</span>
+<span class="sd">        The radius of the patch</span>
+
+<span class="sd">    bagID: interger</span>
+<span class="sd">        Used in the multi-instance learning classification.</span>
+<span class="sd">        The ID of the training sample</span>
+<span class="sd">    instanceID: interger</span>
+<span class="sd">        Used in the multi-instance learning classification.</span>
+<span class="sd">        The ID asigned by the classifier</span>
+<span class="sd">   </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span> <span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialization function&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pdata</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">image_center</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">patch_center</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_size</span> <span class="o">=</span> <span class="bp">None</span>   <span class="c"># actual size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">patch_size</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">downsampled</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gmagnitude</span> <span class="o">=</span> <span class="bp">None</span>
+		
+        <span class="bp">self</span><span class="o">.</span><span class="n">bagID</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instanceID</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;__repr__ function&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s">&#39;TPatch&#39;</span> 
+
+    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">imdata</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialization with imdata</span>
+<div class="viewcode-block" id="TPatch.initialize"><a class="viewcode-back" href="../TPatch.html#TPatch.TPatch.initialize">[docs]</a>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        imdata : numpy array</span>
+<span class="sd">            Initilial data array.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pdata</span> <span class="o">=</span> <span class="n">imdata</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_size</span> <span class="o">=</span> <span class="n">imdata</span><span class="o">.</span><span class="n">shape</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">patch_center</span> <span class="o">=</span> <span class="p">(</span><span class="n">imdata</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">imdata</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">patch_size</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">imdata</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">imdata</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="mi">2</span>
+
+    <span class="k">def</span> <span class="nf">downSampling</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rate</span> <span class="o">=</span> <span class="mi">2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Down sampling the image patch by given sample rate</span></div>
+<div class="viewcode-block" id="TPatch.downSampling"><a class="viewcode-back" href="../TPatch.html#TPatch.TPatch.downSampling">[docs]</a>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        rate : integer</span>
+<span class="sd">            The sample rate.</span>
+<span class="sd">        &quot;&quot;&quot;</span>        
+        <span class="n">rows</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">data_size</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">rate</span><span class="p">))</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">data_size</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">rate</span><span class="p">))</span>
+
+        <span class="n">rs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pdata</span><span class="p">[</span><span class="n">rows</span><span class="p">,:]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">downsampled</span> <span class="o">=</span> <span class="n">rs</span><span class="p">[:,</span><span class="n">cols</span><span class="p">]</span>
+
+
+    <span class="k">def</span> <span class="nf">getRings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">data</span><span class="p">,</span> <span class="n">numrings</span><span class="p">,</span> <span class="n">dr_ini</span><span class="p">,</span><span class="n">r_ini</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span><span class="n">delta_dr</span> <span class="o">=</span> <span class="mi">2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Devide the image patch into a number of rings </span></div>
+<div class="viewcode-block" id="TPatch.getRings"><a class="viewcode-back" href="../TPatch.html#TPatch.TPatch.getRings">[docs]</a>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        data : numpy array</span>
+<span class="sd">            The patch data.</span>
+<span class="sd">        numrings : integer</span>
+<span class="sd">            The number of rings desired</span>
+<span class="sd">        dr_ini : integer</span>
+<span class="sd">            The initial delt value for radius increasment</span>
+<span class="sd">        r_ini: integer</span>
+<span class="sd">            The initial radious value</span>
+<span class="sd">        delta_dr: integer</span>
+<span class="sd">            The increase step of delt value  </span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>        
+
+        <span class="n">nr</span><span class="p">,</span><span class="n">nc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_size</span>
+        <span class="n">X</span><span class="p">,</span> <span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ogrid</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">nr</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">nc</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">rings</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">r1</span> <span class="o">=</span> <span class="n">r_ini</span>
+        <span class="n">dr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">patch_size</span><span class="o">/</span><span class="n">numrings</span>
+        <span class="n">dr</span> <span class="o">=</span> <span class="n">dr</span> <span class="o">+</span> <span class="n">dr_ini</span>
+        
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">numrings</span><span class="p">):</span>
+            <span class="n">r2</span> <span class="o">=</span> <span class="n">r1</span> <span class="o">+</span> <span class="n">dr</span>      
+
+            <span class="n">mask1</span> <span class="o">=</span> <span class="p">(</span><span class="n">X</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">patch_center</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">Y</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">patch_center</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span> <span class="o">&lt;</span> <span class="n">r1</span><span class="o">**</span><span class="mi">2</span>
+            <span class="n">mask2</span> <span class="o">=</span> <span class="p">(</span><span class="n">X</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">patch_center</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">Y</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">patch_center</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span> <span class="o">&lt;</span> <span class="n">r2</span><span class="o">**</span><span class="mi">2</span>
+
+            <span class="n">mask</span> <span class="o">=</span> <span class="n">mask2</span><span class="o">-</span><span class="n">mask1</span>
+            <span class="n">ring</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+            
+            <span class="n">rings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ring</span><span class="p">)</span>
+            <span class="n">r1</span> <span class="o">=</span> <span class="n">r1</span> <span class="o">+</span> <span class="n">dr</span>
+            <span class="n">dr</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">dr</span> <span class="o">-</span> <span class="n">delta_dr</span><span class="p">,</span><span class="mi">5</span><span class="p">)</span>
+
+            <span class="c"># for debugging</span>
+            <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">            outputPath = &#39;C:/Tomosynthesis/localtest/res/&#39;</span>
+<span class="sd">            temp = np.zeros(self.pdata.shape,np.double)</span>
+<span class="sd">            temp[:,:] = data[:,:]</span>
+<span class="sd">            temp[mask] = 0</span>
+<span class="sd">            tiffLib.imsave(outputPath + str(i) + &#39;rings.tif&#39;,np.float32(temp))</span>
+<span class="sd">            &#39;&#39;&#39;</span>
+
+        <span class="k">return</span> <span class="n">rings</span>
+
+    <span class="k">def</span> <span class="nf">getSectors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">data</span><span class="p">,</span> <span class="n">numsects</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Devide the image patch into a number of angular sectors </span></div>
+<div class="viewcode-block" id="TPatch.getSectors"><a class="viewcode-back" href="../TPatch.html#TPatch.TPatch.getSectors">[docs]</a>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        data : numpy array</span>
+<span class="sd">            The patch data.</span>
+<span class="sd">        numrings : integer</span>
+<span class="sd">            The number of sectors desired</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span> 
+
+        <span class="n">dangle</span> <span class="o">=</span> <span class="mi">360</span><span class="o">/</span><span class="n">numsects</span>
+
+        <span class="n">gsectors</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">angle1</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">numsects</span><span class="p">):</span>
+            
+            <span class="n">angle2</span> <span class="o">=</span> <span class="n">angle1</span> <span class="o">+</span> <span class="n">dangle</span>
+            
+            <span class="n">radius</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">patch_size</span>
+            <span class="n">shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pdata</span><span class="o">.</span><span class="n">shape</span>
+
+            <span class="n">x</span><span class="p">,</span><span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ogrid</span><span class="p">[:</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],:</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+            <span class="n">cx</span><span class="p">,</span><span class="n">cy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">patch_center</span>
+            <span class="n">tmin</span><span class="p">,</span><span class="n">tmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">((</span><span class="n">angle1</span><span class="p">,</span><span class="n">angle2</span><span class="p">))</span>
+
+            <span class="c"># ensure stop angle &gt; start angle</span>
+            <span class="k">if</span> <span class="n">tmax</span> <span class="o">&lt;</span> <span class="n">tmin</span><span class="p">:</span>
+                    <span class="n">tmax</span> <span class="o">+=</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+
+            <span class="c"># convert cartesian --&gt; polar coordinates</span>
+            <span class="n">r2</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">cx</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">cx</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">y</span><span class="o">-</span><span class="n">cy</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">y</span><span class="o">-</span><span class="n">cy</span><span class="p">)</span>
+            <span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">cx</span><span class="p">,</span><span class="n">y</span><span class="o">-</span><span class="n">cy</span><span class="p">)</span> <span class="o">-</span> <span class="n">tmin</span>
+
+            <span class="c"># wrap angles between 0 and 2*pi</span>
+            <span class="n">theta</span> <span class="o">%=</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+
+            <span class="c"># circular mask</span>
+            <span class="n">circmask</span> <span class="o">=</span> <span class="n">r2</span> <span class="o">&lt;=</span> <span class="n">radius</span><span class="o">*</span><span class="n">radius</span>
+
+            <span class="c"># angular mask</span>
+            <span class="n">anglemask</span> <span class="o">=</span> <span class="n">theta</span> <span class="o">&lt;=</span> <span class="p">(</span><span class="n">tmax</span><span class="o">-</span><span class="n">tmin</span><span class="p">)</span>
+
+            <span class="n">mask</span> <span class="o">=</span> <span class="n">circmask</span><span class="o">*</span><span class="n">anglemask</span>
+
+            
+            <span class="n">sector</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>          
+            <span class="n">angle1</span> <span class="o">=</span> <span class="n">angle1</span> <span class="o">+</span> <span class="n">dangle</span>
+            <span class="n">gsectors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sector</span><span class="p">)</span>
+
+
+        <span class="k">return</span> <span class="n">gsectors</span>
+
+    <span class="k">def</span> <span class="nf">computeGradient</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">threshold</span> <span class="o">=</span> <span class="mi">1500</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Compute the gradient of the image patch </span></div>
+<div class="viewcode-block" id="TPatch.computeGradient"><a class="viewcode-back" href="../TPatch.html#TPatch.TPatch.computeGradient">[docs]</a>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        threshold : integer</span>
+<span class="sd">            Gradient magnitude below this value are set to be 0.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span> 
+        
+        <span class="n">gx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_size</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">)</span>
+        <span class="n">gy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_size</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">)</span>
+        <span class="n">gx</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pdata</span><span class="p">),</span> <span class="n">n</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">gy</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pdata</span><span class="p">),</span> <span class="n">n</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">gmagnitude</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">gx</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">gy</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gmagnitude</span> <span class="o">&lt;</span> <span class="n">threshold</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gmagnitude</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="nf">getIntenfeats</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">int_Rnum</span><span class="p">,</span> <span class="n">int_Snum</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Compute intensity features of the image patch </span></div>
+<div class="viewcode-block" id="TPatch.getIntenfeats"><a class="viewcode-back" href="../TPatch.html#TPatch.TPatch.getIntenfeats">[docs]</a>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        int_Rnum : integer</span>
+<span class="sd">            The number of rings to be divided into.</span>
+<span class="sd">        int_Rnum : integer</span>
+<span class="sd">            The number of sectors to be divided into.</span>
+<span class="sd">            </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">int_rings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getRings</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">pdata</span><span class="p">,</span> <span class="n">int_Rnum</span><span class="p">,</span> <span class="n">dr_ini</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span><span class="n">r_ini</span> <span class="o">=</span> <span class="mi">15</span><span class="p">,</span><span class="n">delta_dr</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span>
+        
+        <span class="c">#### calculate mean</span>
+        <span class="n">mIntRing</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="n">int_Rnum</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">int_Rnum</span><span class="p">):</span>
+            <span class="n">mIntRing</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">int_rings</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            
+        <span class="c"># mean linear regration</span>
+        <span class="n">sequence</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">mIntRing</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>     
+        <span class="n">slope</span><span class="p">,</span> <span class="n">intercept</span><span class="p">,</span> <span class="n">r_value</span><span class="p">,</span> <span class="n">p_value</span><span class="p">,</span> <span class="n">std_err</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">linregress</span><span class="p">(</span><span class="n">sequence</span><span class="p">,</span><span class="n">mIntRing</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">intMLinear</span> <span class="o">=</span> <span class="n">slope</span>
+
+        <span class="c"># variance of mean</span>
+        <span class="n">var_mIntRing</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">mIntRing</span><span class="p">)</span>
+
+        <span class="c">#### calculate varriance</span>
+        <span class="n">vIntRing</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="n">int_Rnum</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">int_Rnum</span><span class="p">):</span>
+            <span class="n">vIntRing</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">int_rings</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+        <span class="c"># variance linear regretion</span>
+        <span class="n">sequence</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">vIntRing</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>     
+        <span class="n">slope</span><span class="p">,</span> <span class="n">intercept</span><span class="p">,</span> <span class="n">r_value</span><span class="p">,</span> <span class="n">p_value</span><span class="p">,</span> <span class="n">std_err</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">linregress</span><span class="p">(</span><span class="n">sequence</span><span class="p">,</span><span class="n">vIntRing</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">intVLinear</span> <span class="o">=</span> <span class="n">slope</span>
+
+        <span class="sd">&#39;&#39;&#39;intensity sector feats    &#39;&#39;&#39;</span>
+        <span class="n">int_sectors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSectors</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pdata</span><span class="p">,</span> <span class="n">int_Snum</span><span class="p">)</span>
+
+        <span class="c"># calculate mean intensity power </span>
+        <span class="n">mIntSec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="n">int_Snum</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">int_Snum</span><span class="p">):</span>
+            <span class="n">mIntSec</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">int_sectors</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        
+        <span class="n">mIntSec</span> <span class="o">=</span> <span class="n">mIntSec</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">mIntSec</span><span class="p">)</span>
+        <span class="n">intSsorted</span> <span class="o">=</span>  <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="o">-</span><span class="n">mIntSec</span><span class="p">)</span>
+
+        <span class="n">threshold</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="n">int_Snum</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">intSsorted</span> <span class="o">&gt;</span> <span class="n">threshold</span>
+        <span class="n">int_power</span> <span class="o">=</span> <span class="n">intSsorted</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span><span class="o">.</span><span class="n">size</span>
+
+        <span class="n">angular_pdiff</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">intSsorted</span><span class="p">[:,</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">])</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">intSsorted</span><span class="p">[:,</span><span class="mi">8</span><span class="p">:</span><span class="n">int_Snum</span><span class="p">])</span>
+
+        <span class="c">#print int_power</span>
+        
+        <span class="k">return</span>  <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">intMLinear</span><span class="p">,</span> <span class="n">var_mIntRing</span><span class="p">,</span> <span class="n">angular_pdiff</span><span class="p">,</span> <span class="n">int_power</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">getGradfeats</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gr_Rnum</span><span class="p">,</span> <span class="n">gr_Snum</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Compute gradient features of the image patch </span></div>
+<div class="viewcode-block" id="TPatch.getGradfeats"><a class="viewcode-back" href="../TPatch.html#TPatch.TPatch.getGradfeats">[docs]</a>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        gr_Rnum : integer</span>
+<span class="sd">            The number of rings to be divided into.</span>
+<span class="sd">        gr_Snum : integer</span>
+<span class="sd">            The number of sectors to be divided into.</span>
+<span class="sd">            </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c">## gradient ring feats         ##################</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">computeGradient</span><span class="p">(</span><span class="n">threshold</span> <span class="o">=</span> <span class="mi">2500</span><span class="p">)</span>
+        <span class="n">gr_rings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getRings</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">gmagnitude</span><span class="p">,</span> <span class="n">gr_Rnum</span><span class="p">,</span> <span class="n">dr_ini</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span><span class="n">r_ini</span> <span class="o">=</span> <span class="mi">15</span><span class="p">,</span><span class="n">delta_dr</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="c"># calculate mean</span>
+        <span class="n">mGrRing</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="n">gr_Rnum</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">gr_Rnum</span><span class="p">):</span>
+            <span class="n">mGrRing</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">gr_rings</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+        <span class="n">mGrRing</span> <span class="o">=</span> <span class="n">mGrRing</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">mGrRing</span><span class="p">)</span>
+        <span class="n">maxGring</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">mGrRing</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span>   <span class="c">#  this is a feature</span>
+        
+
+        <span class="c">## gradient sector feats         ##################</span>
+        <span class="n">gr_sectors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getSectors</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gmagnitude</span><span class="p">,</span> <span class="n">gr_Snum</span><span class="p">)</span>
+
+        <span class="c"># calculate mean</span>
+        <span class="n">mGrSect</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="n">gr_Snum</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">gr_Snum</span><span class="p">):</span>
+            <span class="n">mGrSect</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">gr_sectors</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+        <span class="n">mGrSect</span> <span class="o">=</span> <span class="n">mGrSect</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">mGrSect</span><span class="p">)</span>
+        <span class="n">mGrSect</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="o">-</span><span class="n">mGrSect</span><span class="p">)</span>
+
+        <span class="n">angular_paccum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">mGrSect</span><span class="p">[:,</span><span class="mi">0</span><span class="p">:</span><span class="mi">6</span><span class="p">])</span>  <span class="c">#  this is a feature</span>
+        <span class="n">angular_pdiff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">mGrSect</span><span class="p">[:,</span><span class="mi">0</span><span class="p">:</span><span class="mi">5</span><span class="p">])</span><span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">mGrSect</span><span class="p">[:,</span><span class="mi">8</span><span class="p">:</span><span class="n">gr_Snum</span><span class="p">])</span>  <span class="c">#  this is a feature</span>
+
+        <span class="n">threshold</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="n">gr_Snum</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">mGrSect</span> <span class="o">&gt;</span> <span class="n">threshold</span>
+        <span class="n">grSpower</span> <span class="o">=</span> <span class="n">mGrSect</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span><span class="o">.</span><span class="n">size</span>    <span class="c"># this is a feature</span>
+      
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">maxGring</span><span class="p">,</span> <span class="n">angular_paccum</span><span class="p">,</span> <span class="n">angular_paccum</span><span class="p">,</span> <span class="n">grSpower</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">getSegmentFeats</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Compute gradient features of the image patch &quot;&quot;&quot;</span></div>
+<div class="viewcode-block" id="TPatch.getSegmentFeats"><a class="viewcode-back" href="../TPatch.html#TPatch.TPatch.getSegmentFeats">[docs]</a>
+        <span class="c">## preprocessing</span>
+        <span class="n">eqimg</span> <span class="o">=</span> <span class="n">histEqualization</span><span class="o">.</span><span class="n">histEqualization</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pdata</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+        <span class="n">denoised</span> <span class="o">=</span> <span class="n">AT_denoising</span><span class="o">.</span><span class="n">DenoisingAW</span><span class="p">(</span><span class="n">eqimg</span><span class="p">)</span>
+        <span class="n">denoised</span> <span class="o">=</span> <span class="n">AT_denoising</span><span class="o">.</span><span class="n">DenoisingAW</span><span class="p">(</span><span class="n">denoised</span><span class="p">)</span>
+        <span class="n">imdata</span> <span class="o">=</span> <span class="n">AT_denoising</span><span class="o">.</span><span class="n">DenoisingAW</span><span class="p">(</span><span class="n">denoised</span><span class="p">)</span>
+
+        <span class="c">#segmentation ceter towards outside</span>
+        <span class="n">lsoutwards</span> <span class="o">=</span> <span class="n">acSeg</span><span class="o">.</span><span class="n">ac_outwards</span><span class="p">(</span><span class="n">imdata</span><span class="p">,</span><span class="n">visulization</span> <span class="o">=</span> <span class="bp">False</span><span class="p">)</span>
+
+        <span class="c"># compute features based on segmentation</span>
+        <span class="n">outSegFeats</span> <span class="o">=</span> <span class="n">acSeg</span><span class="o">.</span><span class="n">getLabelImFeats</span><span class="p">(</span><span class="n">lsoutwards</span><span class="p">,</span><span class="n">center</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">patch_center</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">patch_center</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span><span class="n">orgim</span><span class="o">=</span><span class="n">imdata</span><span class="p">)</span>
+    
+        <span class="k">return</span> <span class="n">outSegFeats</span>
+
+
+<span class="k">class</span> <span class="nc">TLightPatch</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Light class of TPatch includes only class variables &quot;&quot;&quot;</span></div></div>
+<div class="viewcode-block" id="TLightPatch"><a class="viewcode-back" href="../TPatch.html#TPatch.TLightPatch">[docs]</a>
+    <span class="k">def</span> <span class="nf">__init__</span> <span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pdata</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">image_center</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">patch_center</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_size</span> <span class="o">=</span> <span class="bp">None</span>   <span class="c"># actual size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">patch_size</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">feats</span> <span class="o">=</span> <span class="bp">None</span>
+		
+        <span class="bp">self</span><span class="o">.</span><span class="n">bagID</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instanceID</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;TLightPatch&#39;</span> 
+
+
+    
+
+
+    
+</pre></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, SAP.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

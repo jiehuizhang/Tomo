@@ -1,0 +1,322 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>registration &mdash; Tomosynthesis Machine Learning 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Tomosynthesis Machine Learning 1.0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for registration</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;Fiducial Points selection and registration&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">skimage</span>
+<span class="kn">from</span> <span class="nn">skimage</span> <span class="kn">import</span> <span class="nb">filter</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">ndimage</span>
+<span class="kn">from</span> <span class="nn">skimage.morphology</span> <span class="kn">import</span> <span class="n">label</span><span class="p">,</span> <span class="n">disk</span>
+<span class="kn">from</span> <span class="nn">skimage.filter</span> <span class="kn">import</span> <span class="n">roberts</span><span class="p">,</span> <span class="n">sobel</span>
+<span class="kn">from</span> <span class="nn">skimage.measure</span> <span class="kn">import</span> <span class="n">find_contours</span>
+<span class="kn">from</span> <span class="nn">skimage</span> <span class="kn">import</span> <span class="n">measure</span>
+<span class="kn">from</span> <span class="nn">skimage.morphology</span> <span class="kn">import</span> <span class="n">disk</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">tiffLib</span>
+
+<span class="kn">import</span> <span class="nn">activeContourSegmentation</span> <span class="kn">as</span> <span class="nn">acSeg</span>
+<span class="kn">import</span> <span class="nn">TPSpline</span>
+<span class="kn">import</span> <span class="nn">TPS_wrapper</span>
+
+<div class="viewcode-block" id="registration"><a class="viewcode-back" href="../registration.html#registration.registration">[docs]</a><span class="k">def</span> <span class="nf">registration</span><span class="p">(</span><span class="n">im1</span><span class="p">,</span> <span class="n">im2</span><span class="p">,</span> <span class="n">num</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">opt</span> <span class="o">=</span> <span class="s">&#39;py&#39;</span><span class="p">,</span> <span class="n">outputPath</span> <span class="o">=</span> <span class="s">&#39;None&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;The registration main function.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    im1 : numpy array (2d)</span>
+<span class="sd">        The source image</span>
+<span class="sd">    im2 : numpy array (2d)</span>
+<span class="sd">        The destination image</span>
+<span class="sd">    num: integer</span>
+<span class="sd">        The number of fiducial points.</span>
+<span class="sd">    outputPath: str</span>
+<span class="sd">        The output path</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c"># determin which one is the right side of the breast</span>
+    <span class="n">b_size</span> <span class="o">=</span> <span class="mi">5</span>
+    <span class="n">n_row</span><span class="p">,</span> <span class="n">n_col</span> <span class="o">=</span> <span class="n">im1</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">side</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">im1</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">b_size</span><span class="p">,</span><span class="mi">0</span><span class="p">:</span><span class="n">b_size</span><span class="p">])</span> <span class="o">&lt;</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">im1</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">b_size</span><span class="p">,</span><span class="n">n_col</span><span class="o">-</span><span class="n">b_size</span><span class="p">:</span><span class="n">n_col</span><span class="p">]):</span>
+        <span class="n">side</span> <span class="o">=</span> <span class="mi">1</span>   
+
+    <span class="c"># flip the right side image</span>
+    <span class="k">if</span> <span class="n">side</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">im1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fliplr</span><span class="p">(</span><span class="n">im1</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">im2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fliplr</span><span class="p">(</span><span class="n">im2</span><span class="p">)</span>           
+
+    <span class="c"># find edges of both images</span>
+    <span class="n">edge1</span> <span class="o">=</span> <span class="n">findEdge</span><span class="p">(</span><span class="n">im1</span><span class="p">)</span>
+    <span class="n">edge2</span> <span class="o">=</span> <span class="n">findEdge</span><span class="p">(</span><span class="n">im2</span><span class="p">)</span>
+
+    <span class="c"># tune edges of both side</span>
+    <span class="n">edge1</span> <span class="o">=</span> <span class="n">tuneEdge</span><span class="p">(</span><span class="n">edge1</span><span class="p">,</span><span class="n">im1</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">edge2</span> <span class="o">=</span> <span class="n">tuneEdge</span><span class="p">(</span><span class="n">edge2</span><span class="p">,</span><span class="n">im2</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+    <span class="c"># samping from both side</span>
+    <span class="n">points1</span> <span class="o">=</span> <span class="n">contour_sampling</span><span class="p">(</span><span class="n">edge1</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
+    <span class="n">points2</span> <span class="o">=</span> <span class="n">contour_sampling</span><span class="p">(</span><span class="n">edge2</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
+
+    <span class="c"># for debugging .........................</span>
+    <span class="n">sam_im1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">im1</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">points1</span><span class="p">:</span>
+        <span class="n">sam_im1</span><span class="p">[</span><span class="n">point</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">point</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="n">sam_im2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">im2</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">points2</span><span class="p">:</span>
+        <span class="n">sam_im2</span><span class="p">[</span><span class="n">point</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">point</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">1</span>
+    
+    <span class="n">selem</span> <span class="o">=</span> <span class="n">disk</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span>
+    <span class="n">dilated1</span> <span class="o">=</span> <span class="n">ndimage</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">sam_im1</span><span class="p">,</span> <span class="n">selem</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;constant&#39;</span><span class="p">,</span> <span class="n">cval</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">dilated2</span> <span class="o">=</span> <span class="n">ndimage</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">sam_im2</span><span class="p">,</span> <span class="n">selem</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;constant&#39;</span><span class="p">,</span> <span class="n">cval</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">points1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">points1</span><span class="p">)</span>
+    <span class="n">points2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">points2</span><span class="p">)</span>
+    
+    <span class="c"># Thin Plate Spline interpolation</span>
+    <span class="n">dst</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">im1</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="c"># im1 as source</span>
+    <span class="k">if</span> <span class="n">opt</span> <span class="o">==</span> <span class="s">&#39;py&#39;</span><span class="p">:</span>      
+        <span class="n">tps</span> <span class="o">=</span> <span class="n">TPSpline</span><span class="o">.</span><span class="n">TPSpline</span><span class="p">()</span>
+        <span class="n">tps</span><span class="o">.</span><span class="n">setCorrespondences</span><span class="p">(</span><span class="n">points1</span><span class="p">,</span> <span class="n">points2</span><span class="p">)</span>
+        <span class="n">dst</span> <span class="o">=</span> <span class="n">tps</span><span class="o">.</span><span class="n">warpImage</span><span class="p">(</span><span class="n">im1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dst</span>
+
+    <span class="k">if</span> <span class="n">opt</span> <span class="o">==</span> <span class="s">&#39;c&#39;</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&quot;Please run the interpolation with C++ exe file!&quot;</span>
+        <span class="k">print</span> <span class="s">&quot;./TPSpline /home/yanbin/Tomosynthesis/libs/TPSpline/test/ps.txt /home/yanbin/Tomosynthesis/libs/TPSpline/test/pd.txt /home/yanbin/Tomosynthesis/libs/TPSpline/test/5016_test.tif /home/yanbin/Tomosynthesis/libs/TPSpline/test/dst.tif&quot;</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="n">outputPath</span> <span class="o">+</span> <span class="s">&#39;ps.txt&#39;</span><span class="p">,</span> <span class="n">points1</span><span class="p">,</span> <span class="s">&#39;</span><span class="si">%d</span><span class="s">&#39;</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s">&#39; &#39;</span><span class="p">)</span>   <span class="c"># X is an array</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="n">outputPath</span> <span class="o">+</span> <span class="s">&#39;pd.txt&#39;</span><span class="p">,</span> <span class="n">points2</span><span class="p">,</span> <span class="s">&#39;</span><span class="si">%d</span><span class="s">&#39;</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s">&#39; &#39;</span><span class="p">)</span>   <span class="c"># X is an array</span>
+        <span class="n">tiffLib</span><span class="o">.</span><span class="n">imsave</span><span class="p">(</span><span class="n">outputPath</span> <span class="o">+</span> <span class="s">&#39;im1.tif&#39;</span><span class="p">,</span><span class="n">im1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">None</span>
+        
+</div>
+<div class="viewcode-block" id="findEdge"><a class="viewcode-back" href="../registration.html#registration.findEdge">[docs]</a><span class="k">def</span> <span class="nf">findEdge</span><span class="p">(</span><span class="n">imdata</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Find the contour of the breast</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    imdata : numpy array (2d)</span>
+<span class="sd">        The image data</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c"># remove border effect</span>
+    <span class="n">imdata</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">imdata</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span>
+    
+    <span class="c"># threshold segmentation</span>
+    <span class="c">#val = filter.threshold_otsu(imdata)</span>
+    <span class="n">val</span> <span class="o">=</span> <span class="mi">500</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">imdata</span> <span class="o">&gt;</span><span class="n">val</span>
+
+    <span class="n">contour</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">find_contours</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">fully_connected</span><span class="o">=</span><span class="s">&#39;low&#39;</span><span class="p">,</span> <span class="n">positive_orientation</span><span class="o">=</span><span class="s">&#39;low&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">contour</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int_</span><span class="p">(</span><span class="n">contour</span><span class="p">)</span>
+    <span class="n">contour</span> <span class="o">=</span> <span class="n">acSeg</span><span class="o">.</span><span class="n">getUniqueContour</span><span class="p">(</span><span class="n">contour</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">contour</span>
+</div>
+<div class="viewcode-block" id="tuneEdge"><a class="viewcode-back" href="../registration.html#registration.tuneEdge">[docs]</a><span class="k">def</span> <span class="nf">tuneEdge</span><span class="p">(</span><span class="n">contour</span><span class="p">,</span> <span class="n">imshape</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Tune the contour so that there is no back and forth in the contour pixels</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    contour : </span>
+<span class="sd">        Initial contour</span>
+<span class="sd">    imshape:</span>
+<span class="sd">        The images shape</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">r_contour</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">upedge</span> <span class="o">=</span> <span class="mi">100</span>
+    <span class="n">leftedge</span> <span class="o">=</span> <span class="mi">30</span>
+    <span class="n">n_r</span><span class="p">,</span> <span class="n">n_c</span> <span class="o">=</span> <span class="n">imshape</span>
+    
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">contour</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+
+        <span class="c"># remove top effect</span>
+        <span class="k">if</span> <span class="n">contour</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">upedge</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="c"># remove bottom effect </span>
+        <span class="k">if</span> <span class="n">contour</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">contour</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="ow">and</span> <span class="n">contour</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="o">*</span><span class="n">n_r</span><span class="o">/</span><span class="mi">4</span> <span class="ow">and</span> <span class="n">contour</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">n_c</span><span class="o">/</span><span class="mi">4</span><span class="p">:</span>
+            <span class="k">break</span>
+        
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">r_contour</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">contour</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">r_contour</span>           
+</div>
+<div class="viewcode-block" id="contour_sampling"><a class="viewcode-back" href="../registration.html#registration.contour_sampling">[docs]</a><span class="k">def</span> <span class="nf">contour_sampling</span><span class="p">(</span><span class="n">contour</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span><span class="n">delta</span> <span class="o">=</span> <span class="mi">5</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Sampling from the contour with given parameters</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    contour : </span>
+<span class="sd">        Tuned contour</span>
+<span class="sd">    num: integer</span>
+<span class="sd">        Number of fiducial points needed</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">samples</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">step</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">contour</span><span class="p">)</span><span class="o">/</span><span class="n">num</span>
+
+    <span class="n">lefte</span> <span class="o">=</span> <span class="mi">0</span>
+     
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num</span><span class="p">):</span>
+    <span class="c">#for i in range(5):</span>
+        <span class="n">samples</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">contour</span><span class="p">[</span><span class="n">i</span><span class="o">*</span><span class="n">step</span> <span class="o">-</span> <span class="n">i</span><span class="o">*</span><span class="n">delta</span><span class="p">])</span>
+        <span class="n">samples</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">contour</span><span class="p">[</span><span class="n">i</span><span class="o">*</span><span class="n">step</span> <span class="o">-</span> <span class="n">i</span><span class="o">*</span><span class="n">delta</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span><span class="n">lefte</span><span class="p">))</span>
+
+    <span class="c">#samples.append(contour[len(contour) - 1])</span>
+
+    <span class="k">return</span> <span class="n">samples</span>
+               
+</div>
+<div class="viewcode-block" id="curvature"><a class="viewcode-back" href="../registration.html#registration.curvature">[docs]</a><span class="k">def</span> <span class="nf">curvature</span><span class="p">(</span><span class="n">contour</span><span class="p">,</span><span class="n">fn</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">bn</span> <span class="o">=</span> <span class="mi">3</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Compute curvature of a contour&quot;&quot;&quot;</span>
+
+    <span class="n">clen</span> <span class="o">=</span> <span class="n">contour</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">E</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">clen</span><span class="p">,),</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">thetai</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">clen</span><span class="p">,),</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">clen</span><span class="p">):</span>
+    
+        <span class="c"># first and last few points</span>
+        <span class="k">if</span> <span class="n">k</span> <span class="o">&lt;</span> <span class="n">bn</span><span class="p">:</span>
+            <span class="n">bnd</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">fnd</span> <span class="o">=</span> <span class="n">k</span> <span class="o">+</span> <span class="n">fn</span>
+        <span class="k">elif</span> <span class="n">k</span> <span class="o">+</span> <span class="n">fn</span> <span class="o">&gt;</span> <span class="n">clen</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">bnd</span> <span class="o">=</span> <span class="n">k</span> <span class="o">-</span> <span class="n">bn</span>
+            <span class="n">fnd</span> <span class="o">=</span> <span class="n">clen</span><span class="o">-</span><span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">bnd</span> <span class="o">=</span> <span class="n">k</span> <span class="o">-</span> <span class="n">bn</span>
+            <span class="n">fnd</span> <span class="o">=</span> <span class="n">k</span> <span class="o">+</span> <span class="n">fn</span>
+
+        <span class="c"># calculate curvature</span>
+        <span class="n">lb</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="p">(</span><span class="n">contour</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">contour</span><span class="p">[</span><span class="n">bnd</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">contour</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">contour</span><span class="p">[</span><span class="n">bnd</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span>
+        <span class="n">lf</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="p">(</span><span class="n">contour</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">contour</span><span class="p">[</span><span class="n">fnd</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">contour</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">contour</span><span class="p">[</span><span class="n">fnd</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">contour</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">contour</span><span class="p">[</span><span class="n">bnd</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">!=</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">thetab</span><span class="o">=</span><span class="n">math</span><span class="o">.</span><span class="n">atan</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">contour</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">contour</span><span class="p">[</span><span class="n">bnd</span><span class="p">,</span><span class="mi">0</span><span class="p">]))</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">contour</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">contour</span><span class="p">[</span><span class="n">bnd</span><span class="p">,</span><span class="mi">1</span><span class="p">]))</span> <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">thetab</span><span class="o">=</span><span class="n">math</span><span class="o">.</span><span class="n">atan</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">contour</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">contour</span><span class="p">[</span><span class="n">bnd</span><span class="p">,</span><span class="mi">0</span><span class="p">]))</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">contour</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">contour</span><span class="p">[</span><span class="n">bnd</span><span class="p">,</span><span class="mi">1</span><span class="p">]))</span> <span class="p">)</span>
+            <span class="n">thetab</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">2</span> <span class="o">-</span> <span class="n">thetab</span>
+
+        <span class="k">if</span> <span class="n">contour</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">contour</span><span class="p">[</span><span class="n">fnd</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">!=</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">thetaf</span><span class="o">=</span><span class="n">math</span><span class="o">.</span><span class="n">atan</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">contour</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">contour</span><span class="p">[</span><span class="n">fnd</span><span class="p">,</span><span class="mi">0</span><span class="p">]))</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">contour</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">contour</span><span class="p">[</span><span class="n">fnd</span><span class="p">,</span><span class="mi">1</span><span class="p">]))</span> <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">thetaf</span><span class="o">=</span><span class="n">math</span><span class="o">.</span><span class="n">atan</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">contour</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">contour</span><span class="p">[</span><span class="n">fnd</span><span class="p">,</span><span class="mi">0</span><span class="p">]))</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">contour</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">contour</span><span class="p">[</span><span class="n">fnd</span><span class="p">,</span><span class="mi">1</span><span class="p">]))</span> <span class="p">)</span>
+            <span class="n">thetaf</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">2</span> <span class="o">-</span> <span class="n">thetaf</span>
+
+        <span class="n">thetai</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">=</span><span class="p">(</span><span class="n">thetab</span><span class="o">+</span><span class="n">thetaf</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
+        <span class="n">detlaf</span><span class="o">=</span><span class="nb">abs</span><span class="p">(</span><span class="n">thetaf</span><span class="o">-</span><span class="n">thetai</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+        <span class="n">detlab</span><span class="o">=</span><span class="nb">abs</span><span class="p">(</span><span class="n">thetai</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">-</span><span class="n">thetab</span><span class="p">)</span>
+        <span class="n">E</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">=</span><span class="n">detlaf</span><span class="o">/</span><span class="n">lf</span><span class="o">/</span><span class="mi">2</span><span class="o">+</span><span class="n">detlab</span><span class="o">/</span><span class="n">lb</span><span class="o">/</span><span class="mi">2</span>
+
+    <span class="n">E</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">=</span><span class="n">E</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">E</span><span class="p">[</span><span class="n">clen</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="n">E</span><span class="p">[</span><span class="n">clen</span> <span class="o">-</span> <span class="mi">2</span><span class="p">]</span>
+    <span class="n">thetai</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">=</span><span class="n">thetai</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">thetai</span><span class="p">[</span><span class="n">clen</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="n">thetai</span><span class="p">[</span><span class="n">clen</span> <span class="o">-</span> <span class="mi">2</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">E</span><span class="p">,</span><span class="n">thetai</span><span class="p">)</span>
+                
+            
+
+
+
+
+
+
+        
+</pre></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, SAP.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

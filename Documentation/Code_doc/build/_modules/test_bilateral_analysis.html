@@ -1,0 +1,162 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>test_bilateral_analysis &mdash; Tomosynthesis Machine Learning 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Tomosynthesis Machine Learning 1.0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for test_bilateral_analysis</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;This script shows how to run registration and comparision.</span>
+<span class="sd">All examples in this script are tested on 2D image slices.&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">TPSpline</span>
+<span class="kn">import</span> <span class="nn">registration</span>
+<span class="kn">import</span> <span class="nn">TPS_wrapper</span>
+<span class="kn">import</span> <span class="nn">regionCompairision</span> <span class="kn">as</span> <span class="nn">rC</span>
+
+<span class="kn">import</span> <span class="nn">ImageIO</span>
+<span class="kn">import</span> <span class="nn">TImage</span>
+<span class="kn">import</span> <span class="nn">tiffLib</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<div class="viewcode-block" id="test_func"><a class="viewcode-back" href="../test_bilateral_analysis.html#test_bilateral_analysis.test_func">[docs]</a><span class="k">def</span> <span class="nf">test_func</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Please set flag Registration to 1 if you want to run registration.</span>
+<span class="sd">    There are two parameters need to specify:</span>
+<span class="sd">    The third one specifys how many pairs of fiducial points.</span>
+<span class="sd">    The forth prameter specifys if you want to run in python(slow) or c++.</span>
+
+<span class="sd">    Please set RegionComparison to 1 if you want to run comparision</span>
+<span class="sd">    Make sure you have the two registered images in the data directory.</span>
+<span class="sd">    Parameters includes region size, set to 200 by default.</span>
+<span class="sd">    The output is a distance image in which pixel values are distance of the region.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">dataPath</span> <span class="o">=</span> <span class="s">&#39;C:/Tomosynthesis/localtest/reg/&#39;</span>
+    <span class="n">outputPath</span> <span class="o">=</span> <span class="s">&#39;C:/Tomosynthesis/test_script/&#39;</span>
+   
+    <span class="n">fileName_r</span> <span class="o">=</span> <span class="s">&#39;6044_r.tif&#39;</span>
+    <span class="n">fileName_l</span> <span class="o">=</span> <span class="s">&#39;6044_l.tif&#39;</span>
+
+    <span class="n">im_r</span> <span class="o">=</span> <span class="n">ImageIO</span><span class="o">.</span><span class="n">imReader</span><span class="p">(</span><span class="n">dataPath</span><span class="p">,</span><span class="n">fileName_r</span><span class="p">,</span> <span class="s">&#39;tif&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">im_l</span> <span class="o">=</span> <span class="n">ImageIO</span><span class="o">.</span><span class="n">imReader</span><span class="p">(</span><span class="n">dataPath</span><span class="p">,</span><span class="n">fileName_l</span><span class="p">,</span> <span class="s">&#39;tif&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="c">## Run flags</span>
+    <span class="n">Registration</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">RegionComparison</span> <span class="o">=</span> <span class="mi">1</span>
+    
+    <span class="c">## Run registration</span>
+    <span class="k">if</span> <span class="n">Registration</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+
+        <span class="n">warped_im1</span> <span class="o">=</span> <span class="n">registration</span><span class="o">.</span><span class="n">registration</span><span class="p">(</span><span class="n">im_r</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">im_l</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">15</span><span class="p">,</span><span class="s">&#39;py&#39;</span><span class="p">,</span> <span class="n">outputPath</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">warped_im1</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">tiffLib</span><span class="o">.</span><span class="n">imsave</span><span class="p">(</span><span class="n">outputPath</span> <span class="o">+</span> <span class="s">&#39;dst.tif&#39;</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">warped_im1</span><span class="p">))</span>
+
+    <span class="c">## Run region comparison</span>
+    <span class="k">if</span> <span class="n">RegionComparison</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+
+        <span class="n">params</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">params</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">&#39;1d&#39;</span><span class="p">,</span> <span class="s">&#39;cv_comp&#39;</span><span class="p">,</span> <span class="n">cv</span><span class="o">.</span><span class="n">CV_COMP_CORREL</span><span class="p">))</span>
+        <span class="n">params</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">&#39;1d&#39;</span><span class="p">,</span> <span class="s">&#39;scipy_comp&#39;</span><span class="p">,</span> <span class="s">&#39;Euclidean&#39;</span><span class="p">))</span>
+        <span class="n">params</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">&#39;1d&#39;</span><span class="p">,</span> <span class="s">&#39;scipy_comp&#39;</span><span class="p">,</span> <span class="s">&#39;Manhattan&#39;</span><span class="p">))</span>
+        <span class="n">params</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">&#39;1d&#39;</span><span class="p">,</span> <span class="s">&#39;kl_div&#39;</span><span class="p">,</span> <span class="s">&#39;None&#39;</span><span class="p">))</span>
+
+        <span class="n">params</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">&#39;2d&#39;</span><span class="p">,</span> <span class="n">cv</span><span class="o">.</span><span class="n">CV_TM_SQDIFF_NORMED</span><span class="p">,</span> <span class="s">&#39;None&#39;</span><span class="p">))</span>
+        <span class="n">params</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">&#39;2d&#39;</span><span class="p">,</span> <span class="n">cv</span><span class="o">.</span><span class="n">CV_TM_CCORR_NORMED</span><span class="p">,</span> <span class="s">&#39;None&#39;</span><span class="p">))</span>
+        <span class="n">params</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">&#39;2d&#39;</span><span class="p">,</span> <span class="n">cv</span><span class="o">.</span><span class="n">CV_TM_CCOEFF_NORMED</span><span class="p">,</span> <span class="s">&#39;None&#39;</span><span class="p">))</span>
+
+        <span class="n">params</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">&#39;decomp&#39;</span><span class="p">,</span> <span class="s">&#39;eigen&#39;</span><span class="p">,</span> <span class="s">&#39;None&#39;</span><span class="p">))</span>
+        <span class="n">params</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">&#39;decomp&#39;</span><span class="p">,</span> <span class="s">&#39;NMF&#39;</span><span class="p">,</span> <span class="s">&#39;None&#39;</span><span class="p">))</span>
+
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">params</span><span class="p">)):</span>
+            <span class="n">dis_im</span> <span class="o">=</span> <span class="n">rC</span><span class="o">.</span><span class="n">imageComp</span><span class="p">(</span><span class="n">im_r</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">im_l</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">params</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">region_s</span> <span class="o">=</span> <span class="mi">200</span><span class="p">,</span> <span class="n">olap_s</span> <span class="o">=</span> <span class="mi">200</span><span class="p">)</span>   
+            <span class="n">tiffLib</span><span class="o">.</span><span class="n">imsave</span><span class="p">(</span><span class="n">outputPath</span> <span class="o">+</span> <span class="s">&#39;dis&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;.tif&#39;</span> <span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">dis_im</span><span class="p">)</span> <span class="p">)</span>
+
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+
+    <span class="n">test_func</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, SAP.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

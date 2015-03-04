@@ -1,0 +1,318 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>MI_utils module &mdash; Tomosynthesis Machine Learning 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Tomosynthesis Machine Learning 1.0 documentation" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-MI_utils">
+<span id="mi-utils-module"></span><h1>MI_utils module<a class="headerlink" href="#module-MI_utils" title="Permalink to this headline">¶</a></h1>
+<p>Utility functions for working with discrete probability
+distributions. These functions are exposed in the top-level pyentropy
+namespace.</p>
+<dl class="function">
+<dt id="MI_utils.base2dec">
+<tt class="descclassname">MI_utils.</tt><tt class="descname">base2dec</tt><big>(</big><em>x</em>, <em>b</em><big>)</big><a class="reference internal" href="_modules/MI_utils.html#base2dec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#MI_utils.base2dec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert base-b words to decimal values.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt>x <span class="classifier-delimiter">:</span> <span class="classifier">(t, n) int array</span></dt>
+<dd><p class="first last">Array of t length-n base-b words</p>
+</dd>
+<dt>b <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">Base (size of finite alphabet)</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt>d_x: (t,)</dt>
+<dd><p class="first last">Array of decimalised values</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Note, this is the same as decimalise except input x is ordered 
+differently (here x[t,n] - ie columns are trials).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="MI_utils.dec2base">
+<tt class="descclassname">MI_utils.</tt><tt class="descname">dec2base</tt><big>(</big><em>x</em>, <em>b</em>, <em>digits</em><big>)</big><a class="reference internal" href="_modules/MI_utils.html#dec2base"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#MI_utils.dec2base" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert decimal value to a row of values representing it in a 
+given base.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt>x <span class="classifier-delimiter">:</span> <span class="classifier">(t,) or (t,1) int array</span></dt>
+<dd><p class="first last">Array of decimilised values</p>
+</dd>
+<dt>b <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">Base for convergence (finite alphabet size)</p>
+</dd>
+<dt>digits <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">Length of output word for each trial</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">y : (t, digits)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="MI_utils.decimalise">
+<tt class="descclassname">MI_utils.</tt><tt class="descname">decimalise</tt><big>(</big><em>x</em>, <em>n</em>, <em>b</em><big>)</big><a class="reference internal" href="_modules/MI_utils.html#decimalise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#MI_utils.decimalise" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert base-b words to decimal values</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt>x <span class="classifier-delimiter">:</span> <span class="classifier">(n, t) int array</span></dt>
+<dd><p class="first last">Array of t length-n base-b words</p>
+</dd>
+<dt>b <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">Base (size of finite alphabet)</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt>d_x: (t,)</dt>
+<dd><p class="first last">Array of decimalised values</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="MI_utils.ent">
+<tt class="descclassname">MI_utils.</tt><tt class="descname">ent</tt><big>(</big><em>p</em><big>)</big><a class="reference internal" href="_modules/MI_utils.html#ent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#MI_utils.ent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="MI_utils.nsb_entropy">
+<tt class="descclassname">MI_utils.</tt><tt class="descname">nsb_entropy</tt><big>(</big><em>P</em>, <em>N</em>, <em>dim</em><big>)</big><a class="reference internal" href="_modules/MI_utils.html#nsb_entropy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#MI_utils.nsb_entropy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate NSB entropy of a probability distribution using
+external nsb-entropy program.</p>
+<p>Required <cite>nsb-entropy</cite> installed on system path.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first last docutils">
+<dt>P <span class="classifier-delimiter">:</span> <span class="classifier">1D array</span></dt>
+<dd><p class="first last">Probability distribution vector</p>
+</dd>
+<dt>N <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">Total number of trials</p>
+</dd>
+<dt>dim <span class="classifier-delimiter">:</span> <span class="classifier">int </span></dt>
+<dd><p class="first last">Full dimension of space</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="MI_utils.prob">
+<tt class="descclassname">MI_utils.</tt><tt class="descname">prob</tt><big>(</big><em>x</em>, <em>m</em>, <em>method='naive'</em><big>)</big><a class="reference internal" href="_modules/MI_utils.html#prob"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#MI_utils.prob" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sample probability of integer sequence.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt>x <span class="classifier-delimiter">:</span> <span class="classifier">int array</span></dt>
+<dd><p class="first last">integer input sequence</p>
+</dd>
+<dt>m <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">alphabet size of input sequence (max(x)&lt;m)</p>
+</dd>
+<dt>method: {&#8216;naive&#8217;, &#8216;kt&#8217;, &#8216;beta:x&#8217;,&#8217;shrink&#8217;}</dt>
+<dd><p class="first last">Sampling method to use.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt>Pr <span class="classifier-delimiter">:</span> <span class="classifier">float array</span></dt>
+<dd><p class="first last">array representing probability distribution
+Pr[i] = P(x=i)</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="MI_utils.pt_bayescount">
+<tt class="descclassname">MI_utils.</tt><tt class="descname">pt_bayescount</tt><big>(</big><em>Pr</em>, <em>Nt</em><big>)</big><a class="reference internal" href="_modules/MI_utils.html#pt_bayescount"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#MI_utils.pt_bayescount" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the support for analytic bias correction using the 
+Bayesian approach of Panzeri and Treves (1996)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt>Pr <span class="classifier-delimiter">:</span> <span class="classifier">1D aray</span></dt>
+<dd><p class="first last">Probability vector</p>
+</dd>
+<dt>Nt <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">Number of trials</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt>R <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">Bayesian estimate of support</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="MI_utils.quantise">
+<tt class="descclassname">MI_utils.</tt><tt class="descname">quantise</tt><big>(</big><em>input</em>, <em>m</em>, <em>uniform='sampling'</em>, <em>minmax=None</em>, <em>centers=True</em><big>)</big><a class="reference internal" href="_modules/MI_utils.html#quantise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#MI_utils.quantise" title="Permalink to this definition">¶</a></dt>
+<dd><p>Quantise 1D input vector into m levels (unsigned)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first last docutils">
+<dt>uniform <span class="classifier-delimiter">:</span> <span class="classifier">{&#8216;sampling&#8217;,&#8217;bins&#8217;}</span></dt>
+<dd><p class="first last">Determine whether quantisation is uniform for sampling (equally 
+occupied bins) or the bins have uniform widths</p>
+</dd>
+<dt>minmax <span class="classifier-delimiter">:</span> <span class="classifier">tuple (min,max)</span></dt>
+<dd><p class="first last">Specify the range for uniform=&#8217;bins&#8217; quantisation, rather than using
+min/max of input</p>
+</dd>
+<dt>centers <span class="classifier-delimiter">:</span> <span class="classifier">{True, False}</span></dt>
+<dd><p class="first last">Return vector of bin centers instead of bin bounds</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="MI_utils.quantise_discrete">
+<tt class="descclassname">MI_utils.</tt><tt class="descname">quantise_discrete</tt><big>(</big><em>input</em>, <em>m</em><big>)</big><a class="reference internal" href="_modules/MI_utils.html#quantise_discrete"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#MI_utils.quantise_discrete" title="Permalink to this definition">¶</a></dt>
+<dd><p>Re-bin an already discretised sequence (eg of integer counts)</p>
+<p>Input should already be non-negative integers</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/MI_utils.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, SAP.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

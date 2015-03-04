@@ -1,0 +1,183 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>5.1.2. TPSpline module &mdash; Tomosynthesis Machine Learning 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Tomosynthesis Machine Learning 1.0 documentation" href="index.html" />
+    <link rel="up" title="5.1. Thin Plate Spline Registration" href="TPS_registration.html" />
+    <link rel="next" title="5.2. regionCompairision module" href="regionCompairision.html" />
+    <link rel="prev" title="5.1.1. registration module" href="registration.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="regionCompairision.html" title="5.2. regionCompairision module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="registration.html" title="5.1.1. registration module"
+             accesskey="P">previous</a> |</li>
+        <li><a href="Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="asymmetric_analysis.html" >5. Bilateral Asymetric Analysis</a> &raquo;</li>
+          <li><a href="TPS_registration.html" accesskey="U">5.1. Thin Plate Spline Registration</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-TPSpline">
+<span id="tpspline-module"></span><h1>5.1.2. TPSpline module<a class="headerlink" href="#module-TPSpline" title="Permalink to this headline">¶</a></h1>
+<p>Thin plate spline interpolation.</p>
+<dl class="class">
+<dt id="TPSpline.TPSpline">
+<em class="property">class </em><tt class="descclassname">TPSpline.</tt><tt class="descname">TPSpline</tt><a class="reference internal" href="_modules/TPSpline.html#TPSpline"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TPSpline.TPSpline" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="TPSpline.TPSpline.computeMaps">
+<tt class="descname">computeMaps</tt><big>(</big><em>datasize</em><big>)</big><a class="reference internal" href="_modules/TPSpline.html#TPSpline.computeMaps"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TPSpline.TPSpline.computeMaps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute dispalcement for all pixels</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="TPSpline.TPSpline.computeMaps_fast">
+<tt class="descname">computeMaps_fast</tt><big>(</big><em>datasize</em><big>)</big><a class="reference internal" href="_modules/TPSpline.html#TPSpline.computeMaps_fast"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TPSpline.TPSpline.computeMaps_fast" title="Permalink to this definition">¶</a></dt>
+<dd><p>A faster version of compute dispalcement for all pixels</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="TPSpline.TPSpline.computeSplineCoeffs">
+<tt class="descname">computeSplineCoeffs</tt><big>(</big><em>lamda</em><big>)</big><a class="reference internal" href="_modules/TPSpline.html#TPSpline.computeSplineCoeffs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TPSpline.TPSpline.computeSplineCoeffs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Solve the linear system</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="TPSpline.TPSpline.fktU">
+<tt class="descname">fktU</tt><big>(</big><em>p1</em>, <em>p2</em><big>)</big><a class="reference internal" href="_modules/TPSpline.html#TPSpline.fktU"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TPSpline.TPSpline.fktU" title="Permalink to this definition">¶</a></dt>
+<dd><p>The U = f(r) function</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="TPSpline.TPSpline.interpolate">
+<tt class="descname">interpolate</tt><big>(</big><em>p</em><big>)</big><a class="reference internal" href="_modules/TPSpline.html#TPSpline.interpolate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TPSpline.TPSpline.interpolate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute displacement based on computed splie coefficients</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="TPSpline.TPSpline.interpolate_fast">
+<tt class="descname">interpolate_fast</tt><big>(</big><em>p</em><big>)</big><a class="reference internal" href="_modules/TPSpline.html#TPSpline.interpolate_fast"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TPSpline.TPSpline.interpolate_fast" title="Permalink to this definition">¶</a></dt>
+<dd><p>A faster version of Compute displacement based on computed
+splie coefficients</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="TPSpline.TPSpline.setCorrespondences">
+<tt class="descname">setCorrespondences</tt><big>(</big><em>pS</em>, <em>pD</em><big>)</big><a class="reference internal" href="_modules/TPSpline.html#TPSpline.setCorrespondences"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TPSpline.TPSpline.setCorrespondences" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the fiducial points for registration.</p>
+<dl class="docutils">
+<dt>pS <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd>Lists of control point from source image</dd>
+<dt>pD <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd>Lists of control point from destination image</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="TPSpline.TPSpline.warpImage">
+<tt class="descname">warpImage</tt><big>(</big><em>src</em>, <em>lamda=0.05</em><big>)</big><a class="reference internal" href="_modules/TPSpline.html#TPSpline.warpImage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TPSpline.TPSpline.warpImage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Warpiing the source image</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="registration.html"
+                        title="previous chapter">5.1.1. registration module</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="regionCompairision.html"
+                        title="next chapter">5.2. regionCompairision module</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/TPSpline.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="regionCompairision.html" title="5.2. regionCompairision module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="registration.html" title="5.1.1. registration module"
+             >previous</a> |</li>
+        <li><a href="Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="asymmetric_analysis.html" >5. Bilateral Asymetric Analysis</a> &raquo;</li>
+          <li><a href="TPS_registration.html" >5.1. Thin Plate Spline Registration</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, SAP.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,406 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>1.2. tiffLib module &mdash; Tomosynthesis Machine Learning 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Tomosynthesis Machine Learning 1.0 documentation" href="index.html" />
+    <link rel="up" title="1. Core Functions" href="core_functions.html" />
+    <link rel="next" title="1.3. TImage module" href="TImage.html" />
+    <link rel="prev" title="1.1. ImageIO module" href="ImageIO.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="TImage.html" title="1.3. TImage module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="ImageIO.html" title="1.1. ImageIO module"
+             accesskey="P">previous</a> |</li>
+        <li><a href="Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="core_functions.html" accesskey="U">1. Core Functions</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-tiffLib">
+<span id="tifflib-module"></span><h1>1.2. tiffLib module<a class="headerlink" href="#module-tiffLib" title="Permalink to this headline">¶</a></h1>
+<p>Read and write image data from and to TIFF files.</p>
+<dl class="function">
+<dt id="tiffLib.imsave">
+<tt class="descclassname">tiffLib.</tt><tt class="descname">imsave</tt><big>(</big><em>filename</em>, <em>data</em>, <em>photometric=None</em>, <em>planarconfig=None</em>, <em>resolution=None</em>, <em>description=None</em>, <em>software='tifffile.py'</em>, <em>byteorder=None</em>, <em>bigtiff=False</em>, <em>compress=0</em>, <em>extratags=()</em><big>)</big><a class="reference internal" href="_modules/tiffLib.html#imsave"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tiffLib.imsave" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write image data to TIFF file.</p>
+<p>Image data are written in one stripe per plane.
+Dimensions larger than 2 or 3 (depending on photometric mode and
+planar configuration) are flattened and saved as separate pages.
+The &#8216;sample_format&#8217; and &#8216;bits_per_sample&#8217; TIFF tags are derived from
+the data type.</p>
+<dl class="docutils">
+<dt>filename <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>Name of file to write.</dd>
+<dt>data <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
+<dd>Input image. The last dimensions are assumed to be image height,
+width, and samples.</dd>
+<dt>photometric <span class="classifier-delimiter">:</span> <span class="classifier">{&#8216;minisblack&#8217;, &#8216;miniswhite&#8217;, &#8216;rgb&#8217;}</span></dt>
+<dd>The color space of the image data.
+By default this setting is inferred from the data shape.</dd>
+<dt>planarconfig <span class="classifier-delimiter">:</span> <span class="classifier">{&#8216;contig&#8217;, &#8216;planar&#8217;}</span></dt>
+<dd>Specifies if samples are stored contiguous or in separate planes.
+By default this setting is inferred from the data shape.
+&#8216;contig&#8217;: last dimension contains samples.
+&#8216;planar&#8217;: third last dimension contains samples.</dd>
+<dt>resolution <span class="classifier-delimiter">:</span> <span class="classifier">(float, float) or ((int, int), (int, int))</span></dt>
+<dd>X and Y resolution in dots per inch as float or rational numbers.</dd>
+<dt>description <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>The subject of the image. Saved with the first page only.</dd>
+<dt>software <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>Name of the software used to create the image.
+Saved with the first page only.</dd>
+<dt>byteorder <span class="classifier-delimiter">:</span> <span class="classifier">{&#8216;&lt;&#8217;, &#8216;&gt;&#8217;}</span></dt>
+<dd>The endianness of the data in the file.
+By default this is the system&#8217;s native byte order.</dd>
+<dt>bigtiff <span class="classifier-delimiter">:</span> <span class="classifier">bool</span></dt>
+<dd>If True, the BigTIFF format is used.
+By default the standard TIFF format is used for data less than 2000 MB.</dd>
+<dt>compress <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>Values from 0 to 9 controlling the level of zlib compression.
+If 0, data are written uncompressed (default).</dd>
+<dt>extratags: sequence of tuples</dt>
+<dd><p class="first">Additional tags as [(code, dtype, count, value, writeonce)].
+code : int</p>
+<blockquote>
+<div>The TIFF tag Id.</div></blockquote>
+<dl class="last docutils">
+<dt>dtype <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>Data type of items in <cite>value</cite> in Python struct format.
+One of B, s, H, I, 2I, b, h, i, f, d, Q, or q.</dd>
+<dt>count <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>Number of data values. Not used for string values.</dd>
+<dt>value <span class="classifier-delimiter">:</span> <span class="classifier">sequence</span></dt>
+<dd><cite>Count</cite> values compatible with <cite>dtype</cite>.</dd>
+<dt>writeonce <span class="classifier-delimiter">:</span> <span class="classifier">bool</span></dt>
+<dd>If True, the tag is written to the first page only.</dd>
+</dl>
+</dd>
+</dl>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">301</span><span class="p">,</span> <span class="mi">219</span><span class="p">),</span> <span class="s">&#39;float32&#39;</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.5</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">imsave</span><span class="p">(</span><span class="s">&#39;temp.tif&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">compress</span><span class="o">=</span><span class="mi">6</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">5</span><span class="p">,</span> <span class="mi">301</span><span class="p">,</span> <span class="mi">219</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="s">&#39;uint8&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="mi">127</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">value</span> <span class="o">=</span> <span class="s">u&#39;{&quot;shape&quot;: </span><span class="si">%s</span><span class="s">}&#39;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">imsave</span><span class="p">(</span><span class="s">&#39;temp.tif&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">extratags</span><span class="o">=</span><span class="p">[(</span><span class="mi">270</span><span class="p">,</span> <span class="s">&#39;s&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="bp">True</span><span class="p">)])</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="tiffLib.imread">
+<tt class="descclassname">tiffLib.</tt><tt class="descname">imread</tt><big>(</big><em>files</em>, <em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/tiffLib.html#imread"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tiffLib.imread" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return image data from TIFF file(s) as numpy array.</p>
+<p>The first image series is returned if no arguments are provided.</p>
+<dl class="docutils">
+<dt>files <span class="classifier-delimiter">:</span> <span class="classifier">str or list</span></dt>
+<dd>File name, glob pattern, or list of file names.</dd>
+<dt>key <span class="classifier-delimiter">:</span> <span class="classifier">int, slice, or sequence of page indices</span></dt>
+<dd>Defines which pages to return as array.</dd>
+<dt>series <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>Defines which series of pages in file to return as array.</dd>
+<dt>multifile <span class="classifier-delimiter">:</span> <span class="classifier">bool</span></dt>
+<dd>If True (default), OME-TIFF data may include pages from multiple files.</dd>
+<dt>pattern <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>Regular expression pattern that matches axes names and indices in
+file names.</dd>
+</dl>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">im</span> <span class="o">=</span> <span class="n">imread</span><span class="p">(</span><span class="s">&#39;test.tif&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">im</span><span class="o">.</span><span class="n">shape</span>
+<span class="go">(256, 256, 4)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ims</span> <span class="o">=</span> <span class="n">imread</span><span class="p">([</span><span class="s">&#39;test.tif&#39;</span><span class="p">,</span> <span class="s">&#39;test.tif&#39;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ims</span><span class="o">.</span><span class="n">shape</span>
+<span class="go">(2, 256, 256, 4)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="tiffLib.imshow">
+<tt class="descclassname">tiffLib.</tt><tt class="descname">imshow</tt><big>(</big><em>data</em>, <em>title=None</em>, <em>vmin=0</em>, <em>vmax=None</em>, <em>cmap=None</em>, <em>bitspersample=None</em>, <em>photometric='rgb'</em>, <em>interpolation='nearest'</em>, <em>dpi=96</em>, <em>figure=None</em>, <em>subplot=111</em>, <em>maxdim=8192</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/tiffLib.html#imshow"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tiffLib.imshow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot n-dimensional images using matplotlib.pyplot.</p>
+<p>Return figure, subplot and plot axis.
+Requires pyplot already imported <tt class="docutils literal"><span class="pre">from</span> <span class="pre">matplotlib</span> <span class="pre">import</span> <span class="pre">pyplot</span></tt>.</p>
+<dl class="docutils">
+<dt>bitspersample <span class="classifier-delimiter">:</span> <span class="classifier">int or None</span></dt>
+<dd>Number of bits per channel in integer RGB images.</dd>
+<dt>photometric <span class="classifier-delimiter">:</span> <span class="classifier">{&#8216;miniswhite&#8217;, &#8216;minisblack&#8217;, &#8216;rgb&#8217;, or &#8216;palette&#8217;}</span></dt>
+<dd>The color space of the image data.</dd>
+<dt>title <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>Window and subplot title.</dd>
+<dt>figure <span class="classifier-delimiter">:</span> <span class="classifier">matplotlib.figure.Figure (optional).</span></dt>
+<dd>Matplotlib to use for plotting.</dd>
+<dt>subplot <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>A matplotlib.pyplot.subplot axis.</dd>
+<dt>maxdim <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>maximum image size in any dimension.</dd>
+<dt>kwargs <span class="classifier-delimiter">:</span> <span class="classifier">optional</span></dt>
+<dd>Arguments for matplotlib.pyplot.imshow.</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="tiffLib.TiffFile">
+<em class="property">class </em><tt class="descclassname">tiffLib.</tt><tt class="descname">TiffFile</tt><big>(</big><em>arg</em>, <em>name=None</em>, <em>multifile=False</em><big>)</big><a class="reference internal" href="_modules/tiffLib.html#TiffFile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tiffLib.TiffFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="http://docs.python.org/library/functions.html#object" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></a></p>
+<p>Read image and meta-data from TIFF, STK, LSM, and FluoView files.</p>
+<p>TiffFile instances must be closed using the close method, which is
+automatically called when using the &#8216;with&#8217; statement.</p>
+<dl class="docutils">
+<dt>pages <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd>All TIFF pages in file.</dd>
+<dt>series <span class="classifier-delimiter">:</span> <span class="classifier">list of Records(shape, dtype, axes, TiffPages)</span></dt>
+<dd>TIFF pages with compatible shapes and types.</dd>
+<dt>micromanager_metadata: dict</dt>
+<dd>Extra MicroManager non-TIFF metadata in the file, if exists.</dd>
+</dl>
+<p>All attributes are read-only.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">tif</span> <span class="o">=</span> <span class="n">TiffFile</span><span class="p">(</span><span class="s">&#39;test.tif&#39;</span><span class="p">)</span>
+<span class="gp">... </span><span class="k">try</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">images</span> <span class="o">=</span> <span class="n">tif</span><span class="o">.</span><span class="n">asarray</span><span class="p">()</span>
+<span class="gp">... </span><span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+<span class="gp">... </span><span class="k">finally</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">tif</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="tiffLib.TiffFile.asarray">
+<tt class="descname">asarray</tt><big>(</big><em>key=None</em>, <em>series=None</em>, <em>memmap=False</em><big>)</big><a class="reference internal" href="_modules/tiffLib.html#TiffFile.asarray"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tiffLib.TiffFile.asarray" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return image data of multiple TIFF pages as numpy array.</p>
+<p>By default the first image series is returned.</p>
+<dl class="docutils">
+<dt>key <span class="classifier-delimiter">:</span> <span class="classifier">int, slice, or sequence of page indices</span></dt>
+<dd>Defines which pages to return as array.</dd>
+<dt>series <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>Defines which series of pages to return as array.</dd>
+<dt>memmap <span class="classifier-delimiter">:</span> <span class="classifier">bool</span></dt>
+<dd>If True, use numpy.memmap to read arrays from file if possible.</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="tiffLib.TiffFile.close">
+<tt class="descname">close</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/tiffLib.html#TiffFile.close"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tiffLib.TiffFile.close" title="Permalink to this definition">¶</a></dt>
+<dd><p>Close open file handle(s).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="tiffLib.TiffFile.fstat">
+<tt class="descname">fstat</tt><a class="reference internal" href="_modules/tiffLib.html#TiffFile.fstat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tiffLib.TiffFile.fstat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lazy object attribute whose value is computed on first access.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="tiffLib.TiffFile.is_bigtiff">
+<tt class="descname">is_bigtiff</tt><a class="reference internal" href="_modules/tiffLib.html#TiffFile.is_bigtiff"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tiffLib.TiffFile.is_bigtiff" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lazy object attribute whose value is computed on first access.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="tiffLib.TiffFile.is_fluoview">
+<tt class="descname">is_fluoview</tt><a class="reference internal" href="_modules/tiffLib.html#TiffFile.is_fluoview"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tiffLib.TiffFile.is_fluoview" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lazy object attribute whose value is computed on first access.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="tiffLib.TiffFile.is_imagej">
+<tt class="descname">is_imagej</tt><a class="reference internal" href="_modules/tiffLib.html#TiffFile.is_imagej"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tiffLib.TiffFile.is_imagej" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lazy object attribute whose value is computed on first access.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="tiffLib.TiffFile.is_lsm">
+<tt class="descname">is_lsm</tt><a class="reference internal" href="_modules/tiffLib.html#TiffFile.is_lsm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tiffLib.TiffFile.is_lsm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lazy object attribute whose value is computed on first access.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="tiffLib.TiffFile.is_mdgel">
+<tt class="descname">is_mdgel</tt><a class="reference internal" href="_modules/tiffLib.html#TiffFile.is_mdgel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tiffLib.TiffFile.is_mdgel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lazy object attribute whose value is computed on first access.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="tiffLib.TiffFile.is_mediacy">
+<tt class="descname">is_mediacy</tt><a class="reference internal" href="_modules/tiffLib.html#TiffFile.is_mediacy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tiffLib.TiffFile.is_mediacy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lazy object attribute whose value is computed on first access.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="tiffLib.TiffFile.is_micromanager">
+<tt class="descname">is_micromanager</tt><a class="reference internal" href="_modules/tiffLib.html#TiffFile.is_micromanager"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tiffLib.TiffFile.is_micromanager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lazy object attribute whose value is computed on first access.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="tiffLib.TiffFile.is_nih">
+<tt class="descname">is_nih</tt><a class="reference internal" href="_modules/tiffLib.html#TiffFile.is_nih"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tiffLib.TiffFile.is_nih" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lazy object attribute whose value is computed on first access.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="tiffLib.TiffFile.is_ome">
+<tt class="descname">is_ome</tt><a class="reference internal" href="_modules/tiffLib.html#TiffFile.is_ome"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tiffLib.TiffFile.is_ome" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lazy object attribute whose value is computed on first access.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="tiffLib.TiffFile.is_palette">
+<tt class="descname">is_palette</tt><a class="reference internal" href="_modules/tiffLib.html#TiffFile.is_palette"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tiffLib.TiffFile.is_palette" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lazy object attribute whose value is computed on first access.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="tiffLib.TiffFile.is_rgb">
+<tt class="descname">is_rgb</tt><a class="reference internal" href="_modules/tiffLib.html#TiffFile.is_rgb"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tiffLib.TiffFile.is_rgb" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lazy object attribute whose value is computed on first access.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="tiffLib.TiffFile.is_stk">
+<tt class="descname">is_stk</tt><a class="reference internal" href="_modules/tiffLib.html#TiffFile.is_stk"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tiffLib.TiffFile.is_stk" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lazy object attribute whose value is computed on first access.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="tiffLib.TiffFile.series">
+<tt class="descname">series</tt><a class="reference internal" href="_modules/tiffLib.html#TiffFile.series"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tiffLib.TiffFile.series" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lazy object attribute whose value is computed on first access.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="tiffLib.TiffSequence">
+<em class="property">class </em><tt class="descclassname">tiffLib.</tt><tt class="descname">TiffSequence</tt><big>(</big><em>files</em>, <em>imread=&lt;class 'tiffLib.TiffFile'&gt;</em>, <em>pattern='axes'</em><big>)</big><a class="reference internal" href="_modules/tiffLib.html#TiffSequence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tiffLib.TiffSequence" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="http://docs.python.org/library/functions.html#object" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></a></p>
+<p>Sequence of image files.</p>
+<dl class="docutils">
+<dt>files <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd>List of file names.</dd>
+<dt>shape <span class="classifier-delimiter">:</span> <span class="classifier">tuple</span></dt>
+<dd>Shape of image sequence.</dd>
+<dt>axes <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>Labels of axes in shape.</dd>
+</dl>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">ims</span> <span class="o">=</span> <span class="n">TiffSequence</span><span class="p">(</span><span class="s">&quot;test.oif.files/*.tif&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ims</span> <span class="o">=</span> <span class="n">ims</span><span class="o">.</span><span class="n">asarray</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ims</span><span class="o">.</span><span class="n">shape</span>
+<span class="go">(2, 100, 256, 256)</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="tiffLib.TiffSequence.asarray">
+<tt class="descname">asarray</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/tiffLib.html#TiffSequence.asarray"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tiffLib.TiffSequence.asarray" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read image data from all files and return as single numpy array.</p>
+<p>Raise IndexError if image shapes don&#8217;t match.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tiffLib.TiffSequence.close">
+<tt class="descname">close</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/tiffLib.html#TiffSequence.close"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tiffLib.TiffSequence.close" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="ImageIO.html"
+                        title="previous chapter">1.1. ImageIO module</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="TImage.html"
+                        title="next chapter">1.3. TImage module</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/tiffLib.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="TImage.html" title="1.3. TImage module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="ImageIO.html" title="1.1. ImageIO module"
+             >previous</a> |</li>
+        <li><a href="Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="core_functions.html" >1. Core Functions</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, SAP.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

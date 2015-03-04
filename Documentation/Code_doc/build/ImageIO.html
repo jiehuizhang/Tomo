@@ -1,0 +1,191 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>1.1. ImageIO module &mdash; Tomosynthesis Machine Learning 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Tomosynthesis Machine Learning 1.0 documentation" href="index.html" />
+    <link rel="up" title="1. Core Functions" href="core_functions.html" />
+    <link rel="next" title="1.2. tiffLib module" href="tiffLib.html" />
+    <link rel="prev" title="1. Core Functions" href="core_functions.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="tiffLib.html" title="1.2. tiffLib module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="core_functions.html" title="1. Core Functions"
+             accesskey="P">previous</a> |</li>
+        <li><a href="Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="core_functions.html" accesskey="U">1. Core Functions</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-ImageIO">
+<span id="imageio-module"></span><h1>1.1. ImageIO module<a class="headerlink" href="#module-ImageIO" title="Permalink to this headline">¶</a></h1>
+<p>Read and write 2-D/3-D images of variaty formats</p>
+<dl class="function">
+<dt id="ImageIO.imReader">
+<tt class="descclassname">ImageIO.</tt><tt class="descname">imReader</tt><big>(</big><em>path</em>, <em>fname</em>, <em>imformat</em>, <em>dim=3</em><big>)</big><a class="reference internal" href="_modules/ImageIO.html#imReader"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ImageIO.imReader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read 2D/3D image data to the TImage class.</p>
+<dl class="docutils">
+<dt>path: str</dt>
+<dd>The path of the image file</dd>
+<dt>fname: str</dt>
+<dd>The name of the image file including extension</dd>
+<dt>imformat: etr</dt>
+<dd>The format of the image file (&#8216;smv&#8217; or &#8216;tif&#8217; are supported)</dd>
+<dt>dim = 3: integer</dt>
+<dd>The dimension of the image, 3-D as default</dd>
+</dl>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">ImageIO</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dataPath</span> <span class="o">=</span> <span class="s">&#39;C:/Tomosynthesis/localtest/&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fileName</span> <span class="o">=</span> <span class="s">&#39;test-crop.tif&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">im</span> <span class="o">=</span> <span class="n">ImageIO</span><span class="o">.</span><span class="n">imReader</span><span class="p">(</span><span class="n">dataPath</span><span class="p">,</span><span class="n">fileName</span><span class="p">,</span> <span class="s">&#39;tif&#39;</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="ImageIO.imWriter">
+<tt class="descclassname">ImageIO.</tt><tt class="descname">imWriter</tt><big>(</big><em>path</em>, <em>fname</em>, <em>im</em>, <em>dim=3</em><big>)</big><a class="reference internal" href="_modules/ImageIO.html#imWriter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ImageIO.imWriter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write TImage class as a tiff image(stack):</p>
+<dl class="docutils">
+<dt>path: str</dt>
+<dd>The path of the image to be write</dd>
+<dt>name: str</dt>
+<dd>The name of the image to be write (including extension)</dd>
+<dt>im: TImage</dt>
+<dd>TImage class  to be write</dd>
+<dt>dim: integer</dt>
+<dd>The output image dimensionality</dd>
+</dl>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">ImageIO</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dataPath</span> <span class="o">=</span> <span class="s">&#39;C:/Tomosynthesis/localtest/&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">outputPath</span> <span class="o">=</span> <span class="s">&#39;C:/Tomosynthesis/localtest/&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fileName</span> <span class="o">=</span> <span class="s">&#39;test-crop.tif&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">im</span> <span class="o">=</span> <span class="n">ImageIO</span><span class="o">.</span><span class="n">imReader</span><span class="p">(</span><span class="n">dataPath</span><span class="p">,</span><span class="n">fileName</span><span class="p">,</span> <span class="s">&#39;tif&#39;</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ImageIO</span><span class="o">.</span><span class="n">imWriter</span><span class="p">(</span><span class="n">outputPath</span><span class="p">,</span><span class="s">&#39;test.tif&#39;</span><span class="p">,</span><span class="n">im</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="ImageIO.readSMV">
+<tt class="descclassname">ImageIO.</tt><tt class="descname">readSMV</tt><big>(</big><em>imfile</em>, <em>headerSize</em><big>)</big><a class="reference internal" href="_modules/ImageIO.html#readSMV"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ImageIO.readSMV" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read smv file from buffer</p>
+<dl class="docutils">
+<dt>imfile:</dt>
+<dd>An openned image file</dd>
+<dt>headerSize: integer</dt>
+<dd>The size of the header</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="ImageIO.readTiff">
+<tt class="descclassname">ImageIO.</tt><tt class="descname">readTiff</tt><big>(</big><em>fname</em>, <em>dim</em><big>)</big><a class="reference internal" href="_modules/ImageIO.html#readTiff"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ImageIO.readTiff" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read tif file from buffer</p>
+<dl class="docutils">
+<dt>imfile:</dt>
+<dd>An openned image file</dd>
+<dt>dim: integer</dt>
+<dd>The dimension of the image</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="core_functions.html"
+                        title="previous chapter">1. Core Functions</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="tiffLib.html"
+                        title="next chapter">1.2. tiffLib module</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/ImageIO.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="tiffLib.html" title="1.2. tiffLib module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="core_functions.html" title="1. Core Functions"
+             >previous</a> |</li>
+        <li><a href="Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="core_functions.html" >1. Core Functions</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, SAP.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

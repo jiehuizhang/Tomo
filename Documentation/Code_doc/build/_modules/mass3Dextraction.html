@@ -1,0 +1,231 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>mass3Dextraction &mdash; Tomosynthesis Machine Learning 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Tomosynthesis Machine Learning 1.0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for mass3Dextraction</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;Pipeline for mass &amp; architecture distortion extraction in 3D.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">platform</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">current_process</span><span class="p">,</span> <span class="n">cpu_count</span>
+<span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Manager</span><span class="p">,</span> <span class="n">Process</span><span class="p">,</span> <span class="n">Condition</span><span class="p">,</span> <span class="n">Lock</span><span class="p">,</span> <span class="n">Pool</span>
+<span class="kn">from</span> <span class="nn">multiprocessing.managers</span> <span class="kn">import</span> <span class="n">BaseManager</span>
+<span class="kn">from</span> <span class="nn">Queue</span> <span class="kn">import</span> <span class="n">Empty</span>
+<span class="kn">import</span> <span class="nn">Dimreduction</span>
+<span class="kn">import</span> <span class="nn">classification</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy.ndimage.filters</span> <span class="kn">as</span> <span class="nn">filters</span>
+<span class="c">#from pylab import *</span>
+<span class="kn">from</span> <span class="nn">skimage.morphology</span> <span class="kn">import</span> <span class="n">erosion</span><span class="p">,</span> <span class="n">dilation</span><span class="p">,</span> <span class="n">opening</span><span class="p">,</span> <span class="n">closing</span><span class="p">,</span> <span class="n">white_tophat</span>
+<span class="kn">from</span> <span class="nn">skimage.morphology</span> <span class="kn">import</span> <span class="n">black_tophat</span><span class="p">,</span> <span class="n">skeletonize</span><span class="p">,</span> <span class="n">convex_hull_image</span>
+<span class="kn">from</span> <span class="nn">skimage.morphology</span> <span class="kn">import</span> <span class="n">disk</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">ndimage</span>
+
+<span class="kn">import</span> <span class="nn">ImageIO</span>
+<span class="kn">import</span> <span class="nn">TImage</span>
+<span class="kn">import</span> <span class="nn">TPatch</span>
+<span class="kn">import</span> <span class="nn">ShapeIndex</span>
+<span class="kn">import</span> <span class="nn">histEqualization</span>
+<span class="kn">import</span> <span class="nn">AT_denoising</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">misc</span>
+<span class="kn">import</span> <span class="nn">tiffLib</span>
+<span class="kn">import</span> <span class="nn">gabor_filter</span>
+<span class="kn">import</span> <span class="nn">Response_Analysis</span> <span class="kn">as</span> <span class="nn">ra</span>
+<span class="kn">import</span> <span class="nn">bsckground_Substraction</span> <span class="kn">as</span> <span class="nn">bs</span>
+<span class="kn">import</span> <span class="nn">feat_Extraction</span> <span class="kn">as</span> <span class="nn">fex</span>
+<span class="kn">import</span> <span class="nn">PMHoughT</span>
+
+<div class="viewcode-block" id="parallel_Mass_Extra"><a class="viewcode-back" href="../mass3Dextraction.html#mass3Dextraction.parallel_Mass_Extra">[docs]</a><span class="k">def</span> <span class="nf">parallel_Mass_Extra</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">imdata</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Extraction pipeline processed in parallel.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    i: integer</span>
+<span class="sd">        The current slice in the parallel processing pool</span>
+<span class="sd">    im : TImage</span>
+<span class="sd">        The entire image stack.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># parameters</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="p">[</span><span class="mi">8</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mf">0.0185</span><span class="p">,</span><span class="mf">0.9</span><span class="p">]</span>       
+    <span class="n">sampRate</span> <span class="o">=</span> <span class="mi">30</span>
+    <span class="n">winSize</span> <span class="o">=</span> <span class="mi">15</span>
+
+    <span class="c"># skin-line remove &amp; preproseesing</span>
+    <span class="n">threshold</span> <span class="o">=</span> <span class="mi">7200</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">imdata</span> <span class="o">&gt;</span> <span class="n">threshold</span>
+    <span class="n">sline</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">imdata</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">sline</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">selem</span> <span class="o">=</span> <span class="n">disk</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span>
+    <span class="n">dilated</span> <span class="o">=</span> <span class="n">ndimage</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">sline</span><span class="p">,</span> <span class="n">selem</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;constant&#39;</span><span class="p">,</span> <span class="n">cval</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>  
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">dilated</span> <span class="o">&gt;</span> <span class="mi">0</span>
+
+    <span class="n">threshold2</span> <span class="o">=</span> <span class="mi">2500</span>
+    <span class="n">mask2</span> <span class="o">=</span> <span class="n">imdata</span> <span class="o">&lt;</span> <span class="n">threshold2</span>
+    <span class="n">selem</span> <span class="o">=</span> <span class="n">disk</span><span class="p">(</span><span class="mi">30</span><span class="p">)</span>
+    <span class="n">boundary</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">imdata</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">boundary</span><span class="p">[</span><span class="n">mask2</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">dilated</span> <span class="o">=</span> <span class="n">ndimage</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">boundary</span><span class="p">,</span> <span class="n">selem</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;constant&#39;</span><span class="p">,</span> <span class="n">cval</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">mask2</span> <span class="o">=</span> <span class="n">dilated</span> <span class="o">&gt;</span> <span class="mi">0</span>
+    
+    <span class="n">imdata</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">imdata</span><span class="p">[</span><span class="n">mask2</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="c"># gabor kernel and filtering</span>
+    <span class="n">kernels</span> <span class="o">=</span> <span class="n">gabor_filter</span><span class="o">.</span><span class="n">creat_Gabor_Kernels</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">params</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">params</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">params</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">gabor_filter</span><span class="o">.</span><span class="n">compute_Response</span><span class="p">(</span><span class="n">imdata</span><span class="p">,</span><span class="n">kernels</span><span class="p">)</span>
+
+    <span class="c"># response analysis</span>
+    <span class="p">(</span><span class="n">batchResp</span><span class="p">,</span> <span class="n">integratedResp</span><span class="p">)</span> <span class="o">=</span> <span class="n">ra</span><span class="o">.</span><span class="n">cerat_batch_response</span><span class="p">(</span><span class="n">response</span><span class="p">,</span><span class="n">sampRate</span><span class="p">,</span><span class="n">winSize</span><span class="p">)</span>
+    <span class="n">poll</span> <span class="o">=</span> <span class="n">ra</span><span class="o">.</span><span class="n">vote</span><span class="p">(</span><span class="n">batchResp</span><span class="p">)</span>
+    <span class="c">#tiffLib.imsave(outputPath + str(i) + &#39;poll___.tif&#39;,np.float32(poll))</span>
+
+    <span class="c"># remove pectoral muscle</span>
+    <span class="n">poll</span> <span class="o">=</span> <span class="n">PMHoughT</span><span class="o">.</span><span class="n">PMremove</span><span class="p">(</span><span class="n">poll</span><span class="p">,</span> <span class="n">visulization</span> <span class="o">=</span> <span class="bp">False</span><span class="p">)</span>
+    <span class="c">#tiffLib.imsave(outputPath + str(i) + &#39;poll.tif&#39;,np.float32(poll))</span>
+    
+    <span class="n">integrated_poll</span> <span class="o">=</span> <span class="n">ra</span><span class="o">.</span><span class="n">integrating_poll</span><span class="p">(</span><span class="n">poll</span><span class="p">,</span><span class="n">sampRate</span><span class="p">,</span><span class="n">winSize</span><span class="p">,</span><span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>    	
+    <span class="c">#tiffLib.imsave(outputPath + str(i) + &#39;integrated_poll.tif&#39;,np.float32(integrated_poll))</span>
+
+    <span class="c"># feature computing</span>
+    <span class="n">imageSlice</span> <span class="o">=</span> <span class="n">TImage</span><span class="o">.</span><span class="n">TImageSlice</span><span class="p">()</span>
+    <span class="n">patches</span> <span class="o">=</span> <span class="n">fex</span><span class="o">.</span><span class="n">patch_Extraction</span><span class="p">(</span><span class="n">imdata</span><span class="p">,</span><span class="n">poll</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">sampRate</span><span class="p">,</span><span class="mi">90</span><span class="p">,</span><span class="n">threshold</span><span class="o">=</span><span class="mf">16.4</span><span class="p">)</span>   <span class="c"># 11.5</span>
+    
+    <span class="n">slice_feats</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">patches</span><span class="p">)):</span>
+        
+        <span class="c"># intensity ring features</span>
+        <span class="n">int_feats</span> <span class="o">=</span> <span class="n">patches</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">getIntenfeats</span><span class="p">(</span><span class="n">int_Rnum</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span><span class="n">int_Snum</span> <span class="o">=</span> <span class="mi">12</span><span class="p">)</span>
+
+        <span class="c"># gradient sector features</span>
+        <span class="n">patches</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">downSampling</span><span class="p">(</span><span class="n">rate</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">eqimg</span> <span class="o">=</span> <span class="n">histEqualization</span><span class="o">.</span><span class="n">histEqualization</span><span class="p">(</span><span class="n">patches</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">downsampled</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+        <span class="n">smoothimg</span> <span class="o">=</span> <span class="n">filters</span><span class="o">.</span><span class="n">gaussian_filter</span><span class="p">(</span><span class="n">eqimg</span><span class="p">,</span> <span class="n">sigma</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;reflect&#39;</span><span class="p">,</span> <span class="n">cval</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">truncate</span><span class="o">=</span><span class="mf">4.0</span><span class="p">)</span>
+        <span class="n">patch</span> <span class="o">=</span> <span class="n">TPatch</span><span class="o">.</span><span class="n">TPatch</span><span class="p">()</span>
+        <span class="n">patch</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">smoothimg</span><span class="p">)</span>
+        <span class="n">gr_feats</span> <span class="o">=</span> <span class="n">patch</span><span class="o">.</span><span class="n">getGradfeats</span><span class="p">(</span><span class="n">gr_Rnum</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span><span class="n">gr_Snum</span> <span class="o">=</span> <span class="mi">12</span><span class="p">)</span>
+
+        <span class="c"># segment features            </span>
+        <span class="n">seg_feats</span> <span class="o">=</span> <span class="n">patches</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">getSegmentFeats</span><span class="p">()</span>
+        <span class="n">feats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">int_feats</span><span class="p">,</span><span class="n">gr_feats</span><span class="p">,</span><span class="n">seg_feats</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">slice_feats</span> <span class="o">=</span> <span class="n">feats</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">slice_feats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">slice_feats</span><span class="p">,</span><span class="n">feats</span><span class="p">))</span>
+
+        <span class="n">lightPatch</span> <span class="o">=</span> <span class="n">TPatch</span><span class="o">.</span><span class="n">TLightPatch</span><span class="p">()</span>
+        <span class="n">lightPatch</span><span class="o">.</span><span class="n">image_center</span> <span class="o">=</span> <span class="n">patches</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">image_center</span>
+        <span class="n">lightPatch</span><span class="o">.</span><span class="n">pdata</span> <span class="o">=</span> <span class="n">patches</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">pdata</span>
+        <span class="n">lightPatch</span><span class="o">.</span><span class="n">patch_center</span> <span class="o">=</span> <span class="n">patches</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">patch_center</span>
+        <span class="n">lightPatch</span><span class="o">.</span><span class="n">feats</span> <span class="o">=</span> <span class="n">feats</span>
+        <span class="n">imageSlice</span><span class="o">.</span><span class="n">LightPatchList</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lightPatch</span><span class="p">)</span>
+        <span class="n">imageSlice</span><span class="o">.</span><span class="n">feats</span> <span class="o">=</span> <span class="n">slice_feats</span>
+
+    <span class="k">print</span> <span class="p">(</span><span class="s">&#39;done slice &#39;</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="s">&#39;patches &#39;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">patches</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">imageSlice</span>
+
+</div>
+<div class="viewcode-block" id="parallelWrapper"><a class="viewcode-back" href="../mass3Dextraction.html#mass3Dextraction.parallelWrapper">[docs]</a><span class="k">def</span> <span class="nf">parallelWrapper</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+
+    <span class="k">return</span> <span class="n">parallel_Mass_Extra</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+
+
+
+
+
+    
+
+    
+
+
+
+    </div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, SAP.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

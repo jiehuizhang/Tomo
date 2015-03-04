@@ -1,0 +1,204 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3.1.2. Response_Analysis module &mdash; Tomosynthesis Machine Learning 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Tomosynthesis Machine Learning 1.0 documentation" href="index.html" />
+    <link rel="up" title="3.1. Mass Initial Detection" href="initial_detection.html" />
+    <link rel="next" title="3.1.3. PMHoughT module" href="PMHoughT.html" />
+    <link rel="prev" title="3.1.1. gabor_filter module" href="gabor_filter.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="PMHoughT.html" title="3.1.3. PMHoughT module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="gabor_filter.html" title="3.1.1. gabor_filter module"
+             accesskey="P">previous</a> |</li>
+        <li><a href="Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="mass_detection.html" >3. Mass Detection</a> &raquo;</li>
+          <li><a href="initial_detection.html" accesskey="U">3.1. Mass Initial Detection</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-Response_Analysis">
+<span id="response-analysis-module"></span><h1>3.1.2. Response_Analysis module<a class="headerlink" href="#module-Response_Analysis" title="Permalink to this headline">¶</a></h1>
+<p>This file includes functions that analyzing the filtering responses.
+Specifically, creating batch response, taking the voting procedure,etc.</p>
+<dl class="function">
+<dt id="Response_Analysis.cerat_batch_response">
+<tt class="descclassname">Response_Analysis.</tt><tt class="descname">cerat_batch_response</tt><big>(</big><em>response</em>, <em>sampRate</em>, <em>winSize</em><big>)</big><a class="reference internal" href="_modules/Response_Analysis.html#cerat_batch_response"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Response_Analysis.cerat_batch_response" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function creats the batch response matrix in which each element
+is the mean value of a neighbour area from the corresponding response matrix</p>
+<dl class="docutils">
+<dt>response: numpy array</dt>
+<dd>Input response matrix</dd>
+<dt>sampRate: integer</dt>
+<dd>Sampling rate</dd>
+<dt>winSize: integer</dt>
+<dd>Size of the neighbourhood</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="Response_Analysis.dump_vector">
+<tt class="descclassname">Response_Analysis.</tt><tt class="descname">dump_vector</tt><big>(</big><em>response</em><big>)</big><a class="reference internal" href="_modules/Response_Analysis.html#dump_vector"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Response_Analysis.dump_vector" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function reorgazies the responses derived from the same kernel set
+into an numpy array. (For debugging use only)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Response_Analysis.getCDF">
+<tt class="descclassname">Response_Analysis.</tt><tt class="descname">getCDF</tt><big>(</big><em>temp_response</em><big>)</big><a class="reference internal" href="_modules/Response_Analysis.html#getCDF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Response_Analysis.getCDF" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function calculates voting score of response magnitude.
+The score is calculated as the rank of sorted magnitude.</p>
+<dl class="docutils">
+<dt>temp_response: numpy array</dt>
+<dd>Input batch response matrix</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="Response_Analysis.getODF">
+<tt class="descclassname">Response_Analysis.</tt><tt class="descname">getODF</tt><big>(</big><em>response</em>, <em>threshold=0.1</em><big>)</big><a class="reference internal" href="_modules/Response_Analysis.html#getODF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Response_Analysis.getODF" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function calculate the orientation voting score.
+The score in each orientation is set to 1 if it is above the
+percentage threshold, other wise set to zero</p>
+<dl class="docutils">
+<dt>response: numpy array (2D)</dt>
+<dd>Input batch response</dd>
+<dt>threshold = 0.2</dt>
+<dd>for num_orientation = 4</dd>
+<dt>threshold = 0.1</dt>
+<dd>for num_orientation = 8</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="Response_Analysis.integrating_poll">
+<tt class="descclassname">Response_Analysis.</tt><tt class="descname">integrating_poll</tt><big>(</big><em>response</em>, <em>sampRate</em>, <em>winSize</em>, <em>shape</em><big>)</big><a class="reference internal" href="_modules/Response_Analysis.html#integrating_poll"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Response_Analysis.integrating_poll" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function reverse the sampling proceduring after the
+voting result is derived</p>
+<dl class="docutils">
+<dt>response: numpy_array</dt>
+<dd>Input voting result</dd>
+<dt>sampRate: integer</dt>
+<dd>sampling rate</dd>
+<dt>winSize: integer</dt>
+<dd>neighbourhood size</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="Response_Analysis.vote">
+<tt class="descclassname">Response_Analysis.</tt><tt class="descname">vote</tt><big>(</big><em>response</em>, <em>alpha=1.1</em><big>)</big><a class="reference internal" href="_modules/Response_Analysis.html#vote"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Response_Analysis.vote" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function procedes the voting procedure.
+Magnitude score are calculated in function getCDF
+Orientation score are calculated in function getODF</p>
+<dl class="docutils">
+<dt>response:</dt>
+<dd>Input of batch response</dd>
+<dt>alpha:</dt>
+<dd>weight of orientation score
+alpha = 1.1 for num_orientation = 4
+alpha = 0.55 for num_orientation = 8</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="gabor_filter.html"
+                        title="previous chapter">3.1.1. gabor_filter module</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="PMHoughT.html"
+                        title="next chapter">3.1.3. PMHoughT module</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/Response_Analysis.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="PMHoughT.html" title="3.1.3. PMHoughT module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="gabor_filter.html" title="3.1.1. gabor_filter module"
+             >previous</a> |</li>
+        <li><a href="Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="mass_detection.html" >3. Mass Detection</a> &raquo;</li>
+          <li><a href="initial_detection.html" >3.1. Mass Initial Detection</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, SAP.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

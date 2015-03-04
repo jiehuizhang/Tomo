@@ -1,0 +1,413 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>activeContourSegmentation &mdash; Tomosynthesis Machine Learning 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Tomosynthesis Machine Learning 1.0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for activeContourSegmentation</h1><div class="highlight"><pre>
+<span class="sd">&#39;&#39;&#39;Active contour segmentation&#39;&#39;&#39;</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="c">#import pymaxflow</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">misc</span>
+<span class="kn">import</span> <span class="nn">tiffLib</span>
+<span class="kn">import</span> <span class="nn">histEqualization</span>
+<span class="kn">import</span> <span class="nn">AT_denoising</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">stats</span>
+<span class="kn">import</span> <span class="nn">cv2</span>
+<span class="kn">import</span> <span class="nn">math</span>
+
+<span class="kn">import</span> <span class="nn">ImageIO</span>
+<span class="kn">import</span> <span class="nn">TImage</span>
+<span class="kn">import</span> <span class="nn">morphsnakes</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">ndimage</span>
+<span class="kn">import</span> <span class="nn">matplotlib</span>
+<span class="c">#from matplotlib import pyplot as ppl</span>
+<span class="kn">from</span> <span class="nn">numpy.linalg</span> <span class="kn">import</span> <span class="n">lstsq</span>
+
+<span class="kn">import</span> <span class="nn">skimage</span>
+<span class="kn">from</span> <span class="nn">skimage.morphology</span> <span class="kn">import</span> <span class="n">label</span>
+<span class="kn">from</span> <span class="nn">skimage.morphology</span> <span class="kn">import</span> <span class="n">erosion</span><span class="p">,</span> <span class="n">dilation</span><span class="p">,</span> <span class="n">opening</span><span class="p">,</span> <span class="n">closing</span><span class="p">,</span> <span class="n">white_tophat</span>
+<span class="kn">from</span> <span class="nn">skimage.morphology</span> <span class="kn">import</span> <span class="n">disk</span>
+<span class="kn">from</span> <span class="nn">skimage.measure</span> <span class="kn">import</span> <span class="n">regionprops</span>
+<span class="kn">from</span> <span class="nn">skimage.measure</span> <span class="kn">import</span> <span class="n">find_contours</span>
+<span class="kn">import</span> <span class="nn">bsckground_Substraction</span> <span class="kn">as</span> <span class="nn">bs</span>
+<span class="kn">from</span> <span class="nn">scipy.ndimage</span> <span class="kn">import</span> <span class="n">binary_dilation</span><span class="p">,</span> <span class="n">binary_erosion</span><span class="p">,</span> <span class="n">gaussian_filter</span><span class="p">,</span> <span class="n">gaussian_gradient_magnitude</span>
+
+<div class="viewcode-block" id="circle_levelset"><a class="viewcode-back" href="../activeContourSegmentation.html#activeContourSegmentation.circle_levelset">[docs]</a><span class="k">def</span> <span class="nf">circle_levelset</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">center</span><span class="p">,</span> <span class="n">sqradius</span><span class="p">,</span> <span class="n">scalerow</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Build a binary function with a circle as the 0.5-levelset.&quot;&quot;&quot;</span>
+    <span class="n">R</span><span class="p">,</span> <span class="n">C</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mgrid</span><span class="p">[:</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">:</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+    <span class="n">phi</span> <span class="o">=</span> <span class="n">sqradius</span> <span class="o">-</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">scalerow</span><span class="o">*</span><span class="p">(</span><span class="n">R</span><span class="o">-</span><span class="n">center</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">C</span><span class="o">-</span><span class="n">center</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+    <span class="n">u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float_</span><span class="p">(</span><span class="n">phi</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">u</span>
+</div>
+<div class="viewcode-block" id="ac_inwards"><a class="viewcode-back" href="../activeContourSegmentation.html#activeContourSegmentation.ac_inwards">[docs]</a><span class="k">def</span> <span class="nf">ac_inwards</span><span class="p">(</span><span class="n">imdata</span><span class="p">,</span><span class="n">visulization</span> <span class="o">=</span> <span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Propagation from outside toward the center.&quot;&quot;&quot;</span>
+    
+    <span class="c">#  calculate gradient information (I)</span>
+    <span class="n">gI</span> <span class="o">=</span> <span class="n">morphsnakes</span><span class="o">.</span><span class="n">gborders</span><span class="p">(</span><span class="n">imdata</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        
+    <span class="c"># Morphological GAC. Initialization of the level-set.</span>
+    <span class="n">mgac</span> <span class="o">=</span> <span class="n">morphsnakes</span><span class="o">.</span><span class="n">MorphGAC</span><span class="p">(</span><span class="n">gI</span><span class="p">,</span> <span class="n">smoothing</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.035</span><span class="p">,</span> <span class="n">balloon</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">mgac</span><span class="o">.</span><span class="n">levelset</span> <span class="o">=</span> <span class="n">circle_levelset</span><span class="p">(</span><span class="n">imdata</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="p">(</span><span class="n">imdata</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">imdata</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">),</span> <span class="mi">110</span><span class="p">,</span> <span class="n">scalerow</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+    
+    <span class="c"># Visual evolution.</span>
+    <span class="k">if</span> <span class="n">visulization</span> <span class="o">==</span>  <span class="bp">True</span><span class="p">:</span>
+        <span class="n">matplotlib</span><span class="o">.</span><span class="n">pyplot</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+    <span class="n">ls</span> <span class="o">=</span> <span class="n">morphsnakes</span><span class="o">.</span><span class="n">evolve_visual</span><span class="p">(</span><span class="n">mgac</span><span class="p">,</span><span class="n">visulization</span><span class="p">,</span> <span class="n">num_iters</span><span class="o">=</span><span class="mi">80</span><span class="p">,</span> <span class="n">background</span><span class="o">=</span><span class="n">imdata</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">ls</span>
+</div>
+<div class="viewcode-block" id="ac_outwards"><a class="viewcode-back" href="../activeContourSegmentation.html#activeContourSegmentation.ac_outwards">[docs]</a><span class="k">def</span> <span class="nf">ac_outwards</span><span class="p">(</span><span class="n">imdata</span><span class="p">,</span><span class="n">visulization</span> <span class="o">=</span> <span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Propagation from the center toward outside.&quot;&quot;&quot;</span>
+
+    <span class="n">imdata</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">imdata</span><span class="p">)</span> <span class="o">-</span> <span class="n">imdata</span>
+
+    <span class="c"># calculate gradient information (I)</span>
+    <span class="n">gI</span> <span class="o">=</span> <span class="n">morphsnakes</span><span class="o">.</span><span class="n">gborders</span><span class="p">(</span><span class="n">imdata</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">1.3</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="c"># Morphological GAC. Initialization of the level-set.</span>
+    <span class="n">mgac</span> <span class="o">=</span> <span class="n">morphsnakes</span><span class="o">.</span><span class="n">MorphGAC</span><span class="p">(</span><span class="n">gI</span><span class="p">,</span> <span class="n">smoothing</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.028</span><span class="p">,</span> <span class="n">balloon</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">mgac</span><span class="o">.</span><span class="n">levelset</span> <span class="o">=</span> <span class="n">circle_levelset</span><span class="p">(</span><span class="n">imdata</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="p">(</span><span class="n">imdata</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">imdata</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">),</span> <span class="mi">15</span><span class="p">)</span>
+    
+    <span class="c"># Visual evolution.</span>
+    <span class="k">if</span> <span class="n">visulization</span> <span class="o">==</span>  <span class="bp">True</span><span class="p">:</span>
+        <span class="n">matplotlib</span><span class="o">.</span><span class="n">pyplot</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+    <span class="n">ls</span> <span class="o">=</span> <span class="n">morphsnakes</span><span class="o">.</span><span class="n">evolve_visual</span><span class="p">(</span><span class="n">mgac</span><span class="p">,</span> <span class="n">visulization</span><span class="p">,</span> <span class="n">num_iters</span><span class="o">=</span><span class="mi">130</span><span class="p">,</span> <span class="n">background</span><span class="o">=</span><span class="n">imdata</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">ls</span>
+</div>
+<div class="viewcode-block" id="getCentSkewness"><a class="viewcode-back" href="../activeContourSegmentation.html#activeContourSegmentation.getCentSkewness">[docs]</a><span class="k">def</span> <span class="nf">getCentSkewness</span><span class="p">(</span><span class="n">labim</span><span class="p">,</span><span class="n">area</span><span class="p">,</span><span class="n">index</span><span class="p">,</span><span class="n">centroid</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Calculate object skewness.&quot;&quot;&quot;</span>
+
+    <span class="n">cen_skew</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">labim</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">labim</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="n">labim</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="n">index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">cen_skew</span> <span class="o">=</span> <span class="n">cen_skew</span> <span class="o">+</span> <span class="nb">abs</span><span class="p">(</span><span class="n">i</span> <span class="o">-</span> <span class="n">centroid</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="nb">abs</span><span class="p">(</span><span class="n">j</span> <span class="o">-</span> <span class="n">centroid</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="n">cen_skew</span> <span class="o">=</span> <span class="n">cen_skew</span><span class="o">/</span><span class="n">area</span>
+
+    <span class="k">return</span> <span class="n">cen_skew</span>
+</div>
+<div class="viewcode-block" id="getUniqueContour"><a class="viewcode-back" href="../activeContourSegmentation.html#activeContourSegmentation.getUniqueContour">[docs]</a><span class="k">def</span> <span class="nf">getUniqueContour</span><span class="p">(</span><span class="n">contour</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Trimimng contour so that pixels are unique along contour&quot;&quot;&quot;</span>
+    
+    <span class="n">length</span> <span class="o">=</span> <span class="n">contour</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">cont_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">length</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">cont_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">contour</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">length</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">contour</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="ow">and</span> <span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">contour</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="n">doingnothing</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">i</span> <span class="o">=</span> <span class="n">j</span>
+                <span class="k">break</span>
+        <span class="k">if</span> <span class="n">j</span> <span class="o">==</span> <span class="n">length</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="k">break</span>
+
+    <span class="n">uniqcontour</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">cont_list</span><span class="p">),</span><span class="mi">2</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">int_</span><span class="p">)</span>
+    <span class="n">uniqcontour</span> <span class="o">=</span> <span class="n">contour</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">cont_list</span><span class="p">),:]</span>
+
+    <span class="k">return</span> <span class="n">uniqcontour</span>
+</div>
+<div class="viewcode-block" id="getRBSTim"><a class="viewcode-back" href="../activeContourSegmentation.html#activeContourSegmentation.getRBSTim">[docs]</a><span class="k">def</span> <span class="nf">getRBSTim</span><span class="p">(</span><span class="n">labim</span><span class="p">,</span><span class="n">im</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Compute RBST image</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    labim:</span>
+<span class="sd">        Label image</span>
+<span class="sd">    im:</span>
+<span class="sd">        original image</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">height</span> <span class="o">=</span> <span class="n">labim</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="n">width</span> <span class="o">=</span> <span class="n">labim</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span>
+
+    <span class="c">#get Contour</span>
+    <span class="n">contour</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">find_contours</span><span class="p">(</span><span class="n">labim</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">fully_connected</span><span class="o">=</span><span class="s">&#39;low&#39;</span><span class="p">,</span> <span class="n">positive_orientation</span><span class="o">=</span><span class="s">&#39;low&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">contour</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int_</span><span class="p">(</span><span class="n">contour</span><span class="p">)</span>
+    <span class="n">contour</span> <span class="o">=</span> <span class="n">getUniqueContour</span><span class="p">(</span><span class="n">contour</span><span class="p">)</span>
+
+    <span class="n">slop_r</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">normal_r</span> <span class="o">=</span> <span class="mi">40</span>
+    <span class="n">length</span> <span class="o">=</span> <span class="n">contour</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">radius</span> <span class="o">=</span> <span class="mi">2</span>
+    
+    <span class="n">RBST</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">normal_r</span><span class="p">,</span><span class="n">length</span><span class="p">))</span>
+    <span class="n">RBSTim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">labim</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">)</span>
+    <span class="n">contim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">labim</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">length</span><span class="p">):</span>
+        <span class="c"># linear regression of the neighbourhood</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">contour</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">height</span> <span class="ow">or</span> <span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">width</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">contim</span><span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">i</span>
+        <span class="n">p1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">(</span><span class="n">contour</span><span class="p">[(</span><span class="n">i</span> <span class="o">-</span> <span class="n">slop_r</span> <span class="o">+</span> <span class="n">length</span><span class="p">)</span><span class="o">%</span><span class="n">length</span><span class="p">]</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span>   
+        <span class="n">p2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">(</span><span class="n">contour</span><span class="p">[(</span><span class="n">i</span> <span class="o">+</span> <span class="n">slop_r</span><span class="p">)</span><span class="o">%</span><span class="n">length</span><span class="p">]</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">p1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">p2</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">labim</span><span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="n">normal_r</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
+                    <span class="n">j</span> <span class="o">=</span> <span class="o">-</span><span class="n">normal_r</span> <span class="o">-</span> <span class="n">t</span>
+                    <span class="n">cord_x</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">j</span>
+                    <span class="n">cord_y</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">cord_x</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">cord_y</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">cord_x</span> <span class="o">&gt;</span> <span class="n">height</span> <span class="ow">or</span> <span class="n">cord_y</span> <span class="o">&gt;</span> <span class="n">width</span> <span class="p">:</span>
+                        <span class="k">break</span>
+                    <span class="k">if</span> <span class="n">labim</span><span class="p">[</span><span class="n">cord_x</span><span class="p">,</span><span class="n">cord_y</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="k">break</span>
+                    <span class="n">RBSTim</span><span class="p">[</span><span class="n">cord_x</span><span class="p">,</span><span class="n">cord_y</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                    <span class="n">bound_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">cord_x</span><span class="o">-</span><span class="n">radius</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span><span class="nb">min</span><span class="p">(</span><span class="n">cord_x</span><span class="o">+</span><span class="n">radius</span><span class="p">,</span><span class="n">height</span><span class="p">))</span>                    
+                    <span class="n">bound_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">cord_y</span><span class="o">-</span><span class="n">radius</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span><span class="nb">min</span><span class="p">(</span><span class="n">cord_y</span><span class="o">+</span><span class="n">radius</span><span class="p">,</span><span class="n">width</span><span class="p">))</span>
+                    <span class="n">RBST</span><span class="p">[</span><span class="nb">abs</span><span class="p">(</span><span class="n">j</span><span class="p">),</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">im</span><span class="p">[</span><span class="n">bound_x</span><span class="p">,:][:,</span><span class="n">bound_y</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">normal_r</span><span class="p">):</span>
+                    <span class="n">cord_x</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">j</span>
+                    <span class="n">cord_y</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">cord_x</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">cord_y</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">cord_x</span> <span class="o">&gt;</span> <span class="n">height</span> <span class="ow">or</span> <span class="n">cord_y</span> <span class="o">&gt;</span> <span class="n">width</span> <span class="p">:</span>
+                        <span class="k">break</span>
+                    <span class="k">if</span> <span class="n">labim</span><span class="p">[</span><span class="n">cord_x</span><span class="p">,</span><span class="n">cord_y</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="k">break</span>
+                    <span class="n">RBSTim</span><span class="p">[</span><span class="n">cord_x</span><span class="p">,</span><span class="n">cord_y</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                    <span class="n">bound_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">cord_x</span><span class="o">-</span><span class="n">radius</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span><span class="nb">min</span><span class="p">(</span><span class="n">cord_x</span><span class="o">+</span><span class="n">radius</span><span class="p">,</span><span class="n">height</span><span class="p">))</span>                    
+                    <span class="n">bound_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">cord_y</span><span class="o">-</span><span class="n">radius</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span><span class="nb">min</span><span class="p">(</span><span class="n">cord_y</span><span class="o">+</span><span class="n">radius</span><span class="p">,</span><span class="n">width</span><span class="p">))</span>
+                    <span class="n">RBST</span><span class="p">[</span><span class="n">j</span> <span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">im</span><span class="p">[</span><span class="n">bound_x</span><span class="p">,:][:,</span><span class="n">bound_y</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">p1</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">p2</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">labim</span><span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="n">normal_r</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
+                    <span class="n">j</span> <span class="o">=</span> <span class="o">-</span><span class="n">normal_r</span> <span class="o">-</span> <span class="n">t</span>
+                    <span class="n">cord_x</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">cord_y</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">j</span>
+                    <span class="k">if</span> <span class="n">cord_x</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">cord_y</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">cord_x</span> <span class="o">&gt;</span> <span class="n">height</span> <span class="ow">or</span> <span class="n">cord_y</span> <span class="o">&gt;</span> <span class="n">width</span> <span class="p">:</span>
+                        <span class="k">break</span>
+                    <span class="k">if</span> <span class="n">labim</span><span class="p">[</span><span class="n">cord_x</span><span class="p">,</span><span class="n">cord_y</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="k">break</span>
+                    <span class="n">RBSTim</span><span class="p">[</span><span class="n">cord_x</span><span class="p">,</span><span class="n">cord_y</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                    <span class="n">bound_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">cord_x</span><span class="o">-</span><span class="n">radius</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span><span class="nb">min</span><span class="p">(</span><span class="n">cord_x</span><span class="o">+</span><span class="n">radius</span><span class="p">,</span><span class="n">height</span><span class="p">))</span>                    
+                    <span class="n">bound_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">cord_y</span><span class="o">-</span><span class="n">radius</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span><span class="nb">min</span><span class="p">(</span><span class="n">cord_y</span><span class="o">+</span><span class="n">radius</span><span class="p">,</span><span class="n">width</span><span class="p">))</span>
+                    <span class="n">RBST</span><span class="p">[</span><span class="nb">abs</span><span class="p">(</span><span class="n">j</span><span class="p">)</span> <span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">im</span><span class="p">[</span><span class="n">bound_x</span><span class="p">,:][:,</span><span class="n">bound_y</span><span class="p">])</span>
+                    
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">normal_r</span><span class="p">):</span>
+                    <span class="n">cord_x</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">cord_y</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">j</span>
+                    <span class="k">if</span> <span class="n">cord_x</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">cord_y</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">cord_x</span> <span class="o">&gt;</span> <span class="n">height</span> <span class="ow">or</span> <span class="n">cord_y</span> <span class="o">&gt;</span> <span class="n">width</span> <span class="p">:</span>
+                        <span class="k">break</span>
+                    <span class="k">if</span> <span class="n">labim</span><span class="p">[</span><span class="n">cord_x</span><span class="p">,</span><span class="n">cord_y</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="k">break</span>
+                    <span class="n">RBSTim</span><span class="p">[</span><span class="n">cord_x</span><span class="p">,</span><span class="n">cord_y</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                    <span class="n">bound_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">cord_x</span><span class="o">-</span><span class="n">radius</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span><span class="nb">min</span><span class="p">(</span><span class="n">cord_x</span><span class="o">+</span><span class="n">radius</span><span class="p">,</span><span class="n">height</span><span class="p">))</span>                    
+                    <span class="n">bound_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">cord_y</span><span class="o">-</span><span class="n">radius</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span><span class="nb">min</span><span class="p">(</span><span class="n">cord_y</span><span class="o">+</span><span class="n">radius</span><span class="p">,</span><span class="n">width</span><span class="p">))</span>
+                    <span class="n">RBST</span><span class="p">[</span><span class="n">j</span> <span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">im</span><span class="p">[</span><span class="n">bound_x</span><span class="p">,:][:,</span><span class="n">bound_y</span><span class="p">])</span>           
+        <span class="k">if</span> <span class="n">p1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">p2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">and</span> <span class="n">p1</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">p2</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">gr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">(</span><span class="n">p2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">p1</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">(</span><span class="n">p2</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">p1</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">gr</span><span class="p">)</span><span class="o">&lt;</span><span class="mi">1</span><span class="p">:</span>              
+                <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="mi">70</span><span class="p">,</span><span class="mi">0</span><span class="p">):</span>
+                    <span class="n">x</span> <span class="o">=</span> <span class="o">-</span><span class="mi">70</span> <span class="o">-</span> <span class="n">t</span>
+                    <span class="n">y</span> <span class="o">=</span> <span class="n">gr</span><span class="o">*</span><span class="n">x</span>
+                    <span class="n">dist</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">y</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+                    <span class="n">cord_x</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+                    <span class="n">cord_y</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="nb">int</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">cord_x</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">cord_y</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">cord_x</span> <span class="o">&gt;</span> <span class="n">height</span> <span class="ow">or</span> <span class="n">cord_y</span> <span class="o">&gt;</span> <span class="n">width</span> <span class="p">:</span>
+                        <span class="k">break</span>
+                    <span class="k">if</span> <span class="n">dist</span> <span class="o">&lt;</span> <span class="n">normal_r</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">labim</span><span class="p">[</span><span class="n">cord_x</span><span class="p">,</span><span class="n">cord_y</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                            <span class="k">break</span>
+                        <span class="n">RBSTim</span><span class="p">[</span><span class="n">cord_x</span><span class="p">,</span><span class="n">cord_y</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                        <span class="n">bound_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">cord_x</span><span class="o">-</span><span class="n">radius</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span><span class="nb">min</span><span class="p">(</span><span class="n">cord_x</span><span class="o">+</span><span class="n">radius</span><span class="p">,</span><span class="n">height</span><span class="p">))</span>                    
+                        <span class="n">bound_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">cord_y</span><span class="o">-</span><span class="n">radius</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span><span class="nb">min</span><span class="p">(</span><span class="n">cord_y</span><span class="o">+</span><span class="n">radius</span><span class="p">,</span><span class="n">width</span><span class="p">))</span>
+                        <span class="n">RBST</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span> <span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">im</span><span class="p">[</span><span class="n">bound_x</span><span class="p">,:][:,</span><span class="n">bound_y</span><span class="p">])</span>                                        
+                <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">70</span><span class="p">):</span>
+                    <span class="n">y</span> <span class="o">=</span> <span class="n">gr</span><span class="o">*</span><span class="n">x</span>
+                    <span class="n">dist</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">y</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+                    <span class="n">cord_x</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+                    <span class="n">cord_y</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="nb">int</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">cord_x</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">cord_y</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">cord_x</span> <span class="o">&gt;</span> <span class="n">height</span> <span class="ow">or</span> <span class="n">cord_y</span> <span class="o">&gt;</span> <span class="n">width</span> <span class="p">:</span>
+                        <span class="k">break</span>
+                    <span class="k">if</span> <span class="n">dist</span> <span class="o">&lt;</span> <span class="n">normal_r</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">labim</span><span class="p">[</span><span class="n">cord_x</span><span class="p">,</span><span class="n">cord_y</span><span class="p">]</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
+                            <span class="k">break</span>
+                        <span class="n">RBSTim</span><span class="p">[</span><span class="n">cord_x</span><span class="p">,</span><span class="n">cord_y</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                        <span class="n">bound_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">cord_x</span><span class="o">-</span><span class="n">radius</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span><span class="nb">min</span><span class="p">(</span><span class="n">cord_x</span><span class="o">+</span><span class="n">radius</span><span class="p">,</span><span class="n">height</span><span class="p">))</span>                    
+                        <span class="n">bound_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">cord_y</span><span class="o">-</span><span class="n">radius</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span><span class="nb">min</span><span class="p">(</span><span class="n">cord_y</span><span class="o">+</span><span class="n">radius</span><span class="p">,</span><span class="n">width</span><span class="p">))</span>
+                        <span class="n">RBST</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span> <span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">im</span><span class="p">[</span><span class="n">bound_x</span><span class="p">,:][:,</span><span class="n">bound_y</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="mi">70</span><span class="p">,</span><span class="mi">0</span><span class="p">):</span>
+                    <span class="n">y</span> <span class="o">=</span> <span class="n">x</span><span class="o">/</span><span class="n">gr</span>
+                    <span class="n">dist</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">y</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+                    <span class="n">cord_x</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+                    <span class="n">cord_y</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">cord_x</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">cord_y</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">cord_x</span> <span class="o">&gt;</span> <span class="n">height</span> <span class="ow">or</span> <span class="n">cord_y</span> <span class="o">&gt;</span> <span class="n">width</span> <span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="k">if</span> <span class="n">dist</span> <span class="o">&lt;</span> <span class="n">normal_r</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">labim</span><span class="p">[</span><span class="n">cord_x</span><span class="p">,</span><span class="n">cord_y</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                            <span class="k">break</span>
+                        <span class="n">RBSTim</span><span class="p">[</span><span class="n">cord_x</span><span class="p">,</span><span class="n">cord_y</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                        <span class="n">bound_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">cord_x</span><span class="o">-</span><span class="n">radius</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span><span class="nb">min</span><span class="p">(</span><span class="n">cord_x</span><span class="o">+</span><span class="n">radius</span><span class="p">,</span><span class="n">height</span><span class="p">))</span>                    
+                        <span class="n">bound_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">cord_y</span><span class="o">-</span><span class="n">radius</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span><span class="nb">min</span><span class="p">(</span><span class="n">cord_y</span><span class="o">+</span><span class="n">radius</span><span class="p">,</span><span class="n">width</span><span class="p">))</span>                          
+                        <span class="n">RBST</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span> <span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">im</span><span class="p">[</span><span class="n">bound_x</span><span class="p">,:][:,</span><span class="n">bound_y</span><span class="p">])</span>
+                <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">70</span><span class="p">):</span>
+                    <span class="n">y</span> <span class="o">=</span> <span class="n">x</span><span class="o">/</span><span class="n">gr</span>
+                    <span class="n">dist</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">y</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+                    <span class="n">cord_x</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+                    <span class="n">cord_y</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">cord_x</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">cord_y</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">cord_x</span> <span class="o">&gt;</span> <span class="n">height</span> <span class="ow">or</span> <span class="n">cord_y</span> <span class="o">&gt;</span> <span class="n">width</span><span class="p">:</span>
+                        <span class="k">break</span>
+                    <span class="k">if</span> <span class="n">dist</span> <span class="o">&lt;</span> <span class="n">normal_r</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">labim</span><span class="p">[</span><span class="n">cord_x</span><span class="p">,</span><span class="n">cord_y</span><span class="p">]</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
+                            <span class="k">break</span>
+                        <span class="n">RBSTim</span><span class="p">[</span><span class="n">cord_x</span><span class="p">,</span><span class="n">cord_y</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                        <span class="n">bound_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">cord_x</span><span class="o">-</span><span class="n">radius</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span><span class="nb">min</span><span class="p">(</span><span class="n">cord_x</span><span class="o">+</span><span class="n">radius</span><span class="p">,</span><span class="n">height</span><span class="p">))</span>                    
+                        <span class="n">bound_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">cord_y</span><span class="o">-</span><span class="n">radius</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span><span class="nb">min</span><span class="p">(</span><span class="n">cord_y</span><span class="o">+</span><span class="n">radius</span><span class="p">,</span><span class="n">width</span><span class="p">))</span>
+                        <span class="n">RBST</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span> <span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">im</span><span class="p">[</span><span class="n">bound_x</span><span class="p">,:][:,</span><span class="n">bound_y</span><span class="p">])</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">normal_r</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">length</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">RBST</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">RBST</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">RBST</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">j</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">RBST</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">RBST</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">RBST</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                
+                
+    <span class="n">RBSTgr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">RBST</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">)</span>
+    <span class="n">gaussian_gradient_magnitude</span><span class="p">(</span><span class="n">RBST</span><span class="p">,</span> <span class="n">sigma</span> <span class="o">=</span> <span class="mf">1.5</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="n">RBSTgr</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;constant&#39;</span><span class="p">)</span>
+    <span class="n">h_gr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">RBSTgr</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">h_gr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">h_gr</span><span class="p">,</span> <span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+    <span class="n">thresh</span> <span class="o">=</span> <span class="mi">3200</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">h_gr</span><span class="o">&gt;</span><span class="n">thresh</span>
+    <span class="n">h_gr_bin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">h_gr</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">h_gr_bin</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="n">ocross</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">h_gr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+        <span class="k">if</span> <span class="n">h_gr_bin</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">h_gr_bin</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">ocross</span> <span class="o">=</span> <span class="n">ocross</span> <span class="o">+</span><span class="mi">1</span>
+    <span class="k">return</span> <span class="n">ocross</span>   
+
+    </div>
+<div class="viewcode-block" id="getLabelImFeats"><a class="viewcode-back" href="../activeContourSegmentation.html#activeContourSegmentation.getLabelImFeats">[docs]</a><span class="k">def</span> <span class="nf">getLabelImFeats</span><span class="p">(</span><span class="n">lsim</span><span class="p">,</span><span class="n">center</span><span class="p">,</span><span class="n">orgim</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Compute object geometry features.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    lsim:</span>
+<span class="sd">        Segmented binary image</span>
+<span class="sd">    center:</span>
+<span class="sd">        Center coordinate(x,y) of the object</span>
+<span class="sd">    orgim:</span>
+<span class="sd">        Original image</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">label_img</span> <span class="o">=</span> <span class="n">skimage</span><span class="o">.</span><span class="n">measure</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="n">lsim</span><span class="p">)</span>
+    <span class="n">regions</span> <span class="o">=</span> <span class="n">regionprops</span><span class="p">(</span><span class="n">label_img</span><span class="p">)</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">label_img</span><span class="p">[</span><span class="n">center</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">center</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span><span class="o">-</span><span class="mi">1</span>
+
+    <span class="c"># direct features</span>
+    <span class="n">Area</span> <span class="o">=</span> <span class="n">regions</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">area</span>
+    <span class="n">CentralMoments</span> <span class="o">=</span> <span class="n">regions</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">moments_central</span>
+    <span class="n">Eccentricity</span> <span class="o">=</span> <span class="n">regions</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">eccentricity</span>
+    <span class="n">Perimeter</span> <span class="o">=</span> <span class="n">regions</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">perimeter</span>
+
+    <span class="n">skewx</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">stats</span><span class="o">.</span><span class="n">skew</span><span class="p">(</span><span class="n">lsim</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="bp">True</span><span class="p">))</span>
+    <span class="n">skewy</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">stats</span><span class="o">.</span><span class="n">skew</span><span class="p">(</span><span class="n">lsim</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="bp">True</span><span class="p">))</span>
+    
+    <span class="c"># derived features</span>
+    <span class="n">compact</span> <span class="o">=</span> <span class="n">Area</span><span class="o">/</span><span class="n">Perimeter</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">skewness</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">skewx</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">skewy</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">cen_skew</span> <span class="o">=</span> <span class="n">getCentSkewness</span><span class="p">(</span><span class="n">label_img</span><span class="p">,</span><span class="n">Area</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span><span class="n">regions</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">centroid</span><span class="p">)</span>
+    <span class="n">numBranch</span> <span class="o">=</span> <span class="n">getRBSTim</span><span class="p">(</span><span class="n">label_img</span><span class="p">,</span><span class="n">orgim</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">Area</span><span class="p">,</span> <span class="n">Eccentricity</span><span class="p">,</span> <span class="n">Perimeter</span><span class="p">,</span> <span class="n">compact</span><span class="p">,</span> <span class="n">skewness</span><span class="p">,</span> <span class="n">cen_skew</span><span class="p">,</span> <span class="n">numBranch</span><span class="p">))</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, SAP.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

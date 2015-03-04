@@ -1,0 +1,251 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>4.1. MC_Detection module &mdash; Tomosynthesis Machine Learning 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Tomosynthesis Machine Learning 1.0 documentation" href="index.html" />
+    <link rel="up" title="4. Micro Calcification Detection" href="micro_calcification_detect.html" />
+    <link rel="next" title="5. Bilateral Asymetric Analysis" href="asymmetric_analysis.html" />
+    <link rel="prev" title="4. Micro Calcification Detection" href="micro_calcification_detect.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="asymmetric_analysis.html" title="5. Bilateral Asymetric Analysis"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="micro_calcification_detect.html" title="4. Micro Calcification Detection"
+             accesskey="P">previous</a> |</li>
+        <li><a href="Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="micro_calcification_detect.html" accesskey="U">4. Micro Calcification Detection</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-MC_Detection">
+<span id="mc-detection-module"></span><h1>4.1. MC_Detection module<a class="headerlink" href="#module-MC_Detection" title="Permalink to this headline">¶</a></h1>
+<p>Micro calcification detection</p>
+<dl class="function">
+<dt id="MC_Detection.MC_buildup_2d">
+<tt class="descclassname">MC_Detection.</tt><tt class="descname">MC_buildup_2d</tt><big>(</big><em>im</em>, <em>mc_im</em><big>)</big><a class="reference internal" href="_modules/MC_Detection.html#MC_buildup_2d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#MC_Detection.MC_buildup_2d" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute basic features for MC and organize all of them into a list.</p>
+<dl class="docutils">
+<dt>imdata: numpy array (2D)</dt>
+<dd>The image data</dd>
+<dt>mc_im: numpy array (2D)</dt>
+<dd>The connected label image</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="MC_Detection.MC_connect_2d">
+<tt class="descclassname">MC_Detection.</tt><tt class="descname">MC_connect_2d</tt><big>(</big><em>mcList</em>, <em>dis_threshold</em><big>)</big><a class="reference internal" href="_modules/MC_Detection.html#MC_connect_2d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#MC_Detection.MC_connect_2d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Associate MCs with their neighbours</p>
+<dl class="docutils">
+<dt>mcList: list</dt>
+<dd>The list of all MCs detected</dd>
+<dt>dis_threshold: integer</dt>
+<dd>The distance threshold for defineing neighbour</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="MC_Detection.MC_connect_3d">
+<tt class="descclassname">MC_Detection.</tt><tt class="descname">MC_connect_3d</tt><big>(</big><em>mcLists</em>, <em>tolerance=10</em><big>)</big><a class="reference internal" href="_modules/MC_Detection.html#MC_connect_3d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#MC_Detection.MC_connect_3d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Connect MC lists from all slices into 3D Mc and return the 3D Mc list</p>
+<dl class="docutils">
+<dt>mcLists: list</dt>
+<dd>The list of all MC list from all slices</dd>
+<dt>tolerance: integer</dt>
+<dd>MCs within tolerance slices are qualified as being associated into one 3D MC</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="MC_Detection.MCs_constrain">
+<tt class="descclassname">MC_Detection.</tt><tt class="descname">MCs_constrain</tt><big>(</big><em>global_list</em>, <em>num_neighbour=3</em><big>)</big><a class="reference internal" href="_modules/MC_Detection.html#MCs_constrain"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#MC_Detection.MCs_constrain" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute Features for 3D MCs</p>
+<dl class="docutils">
+<dt>global_list:</dt>
+<dd>List of all detected MCs</dd>
+</dl>
+<p>num_neighbour:</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="MC_Detection.MCs_constuct_3d">
+<tt class="descclassname">MC_Detection.</tt><tt class="descname">MCs_constuct_3d</tt><big>(</big><em>mcLists</em>, <em>global_id</em><big>)</big><a class="reference internal" href="_modules/MC_Detection.html#MCs_constuct_3d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#MC_Detection.MCs_constuct_3d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reorganize 3D MCs with global id</p>
+<dl class="docutils">
+<dt>mcLists: list</dt>
+<dd>The 3D MC list</dd>
+<dt>global_id: integer</dt>
+<dd>The number of MCs in total in the image stack.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="MC_Detection.bs_Estimatimation">
+<tt class="descclassname">MC_Detection.</tt><tt class="descname">bs_Estimatimation</tt><big>(</big><em>imdata</em>, <em>threshold</em>, <em>depth=16</em><big>)</big><a class="reference internal" href="_modules/MC_Detection.html#bs_Estimatimation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#MC_Detection.bs_Estimatimation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Esimate the background and extract the value level of threshold%.</p>
+<dl class="docutils">
+<dt>imdata: numpy array (2D)</dt>
+<dd>The image data</dd>
+<dt>threshold: float (0~1)</dt>
+<dd>The percentage level.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="MC_Detection.fg_thresholding">
+<tt class="descclassname">MC_Detection.</tt><tt class="descname">fg_thresholding</tt><big>(</big><em>imdata</em>, <em>threshold</em><big>)</big><a class="reference internal" href="_modules/MC_Detection.html#fg_thresholding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#MC_Detection.fg_thresholding" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract foreground with intensity higher than the threshold.</p>
+<dl class="docutils">
+<dt>imdata: numpy array (2D)</dt>
+<dd>The image data</dd>
+<dt>threshold: float</dt>
+<dd>The intensity threshold.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="MC_Detection.laebl_connecte_comp">
+<tt class="descclassname">MC_Detection.</tt><tt class="descname">laebl_connecte_comp</tt><big>(</big><em>imdata</em>, <em>threshold</em>, <em>size_constrain</em><big>)</big><a class="reference internal" href="_modules/MC_Detection.html#laebl_connecte_comp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#MC_Detection.laebl_connecte_comp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Connect the binarized filtering result into label image.</p>
+<dl class="docutils">
+<dt>imdata: numpy array (2D)</dt>
+<dd>The image data</dd>
+<dt>threshold: float</dt>
+<dd>Threshold for binarize filtering response</dd>
+<dt>size_constrain: integer</dt>
+<dd>Discard MCs larger than size_constrain</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="MC_Detection.log_filtering">
+<tt class="descclassname">MC_Detection.</tt><tt class="descname">log_filtering</tt><big>(</big><em>imdata</em>, <em>winSize</em>, <em>sigma</em>, <em>fg_thresh</em>, <em>option='proplog'</em><big>)</big><a class="reference internal" href="_modules/MC_Detection.html#log_filtering"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#MC_Detection.log_filtering" title="Permalink to this definition">¶</a></dt>
+<dd><p>Blob detection using LOG filter, image is cropped to local windows before filtering.</p>
+<dl class="docutils">
+<dt>imdata: numpy array (2D)</dt>
+<dd>The image data</dd>
+<dt>winSize: integer</dt>
+<dd>The size of local window.</dd>
+<dt>sigma: float</dt>
+<dd>Parameter for LOG</dd>
+<dt>fg_thresh: float(0~1)</dt>
+<dd>The foreground extraction percentage level.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="MC_Detection.parallelWrapper">
+<tt class="descclassname">MC_Detection.</tt><tt class="descname">parallelWrapper</tt><big>(</big><em>args</em><big>)</big><a class="reference internal" href="_modules/MC_Detection.html#parallelWrapper"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#MC_Detection.parallelWrapper" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="MC_Detection.parallel_MC_Detection">
+<tt class="descclassname">MC_Detection.</tt><tt class="descname">parallel_MC_Detection</tt><big>(</big><em>i</em>, <em>imdata</em><big>)</big><a class="reference internal" href="_modules/MC_Detection.html#parallel_MC_Detection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#MC_Detection.parallel_MC_Detection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calcification detection processing in parallel.</p>
+<dl class="docutils">
+<dt>i: integer</dt>
+<dd>The current slice in the parallel processing pool</dd>
+<dt>imdata <span class="classifier-delimiter">:</span> <span class="classifier">numpy array (2D)</span></dt>
+<dd>The original image data</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="micro_calcification_detect.html"
+                        title="previous chapter">4. Micro Calcification Detection</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="asymmetric_analysis.html"
+                        title="next chapter">5. Bilateral Asymetric Analysis</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/MC_Detection.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="asymmetric_analysis.html" title="5. Bilateral Asymetric Analysis"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="micro_calcification_detect.html" title="4. Micro Calcification Detection"
+             >previous</a> |</li>
+        <li><a href="Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="micro_calcification_detect.html" >4. Micro Calcification Detection</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, SAP.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

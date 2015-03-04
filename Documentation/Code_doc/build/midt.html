@@ -1,0 +1,162 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3.4.3. midt module &mdash; Tomosynthesis Machine Learning 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Tomosynthesis Machine Learning 1.0 documentation" href="index.html" />
+    <link rel="up" title="3.4. Mass Classification" href="Mclassification.html" />
+    <link rel="next" title="3.5. mass3Dextraction module" href="mass3Dextraction.html" />
+    <link rel="prev" title="3.4.2. graph_classification module" href="graph_classification.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="mass3Dextraction.html" title="3.5. mass3Dextraction module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="graph_classification.html" title="3.4.2. graph_classification module"
+             accesskey="P">previous</a> |</li>
+        <li><a href="Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="mass_detection.html" >3. Mass Detection</a> &raquo;</li>
+          <li><a href="Mclassification.html" accesskey="U">3.4. Mass Classification</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-midt">
+<span id="midt-module"></span><h1>3.4.3. midt module<a class="headerlink" href="#module-midt" title="Permalink to this headline">¶</a></h1>
+<p>Multi Instance Desiicion Tree Classfication</p>
+<dl class="function">
+<dt id="midt.ClusteringtoBags">
+<tt class="descclassname">midt.</tt><tt class="descname">ClusteringtoBags</tt><big>(</big><em>coord</em>, <em>dis_thresh=15</em><big>)</big><a class="reference internal" href="_modules/midt.html#ClusteringtoBags"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#midt.ClusteringtoBags" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clustering ROIs in slices into 3D ROIs, so that 2D ROI with close (x,y)
+coordination from adjacent slices  will be assigned into one bag.</p>
+<dl class="docutils">
+<dt>coord: list of coordination</dt>
+<dd>The coordination list for all ROIs</dd>
+<dt>dis_thresh:</dt>
+<dd>Threshold for assigning ROIs into the same bag.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="midt.classify">
+<tt class="descclassname">midt.</tt><tt class="descname">classify</tt><big>(</big><em>sliceList</em>, <em>cancerList</em>, <em>controlList</em><big>)</big><a class="reference internal" href="_modules/midt.html#classify"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#midt.classify" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main function for classification using multi instance desicion tree</p>
+<dl class="docutils">
+<dt>sliceList:</dt>
+<dd>List of suspicious data</dd>
+<dt>cancerList:</dt>
+<dd>List positive data</dd>
+<dt>controlList:</dt>
+<dd>List of negative data</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="midt.info_fetch">
+<tt class="descclassname">midt.</tt><tt class="descname">info_fetch</tt><big>(</big><em>plist</em>, <em>opt</em><big>)</big><a class="reference internal" href="_modules/midt.html#info_fetch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#midt.info_fetch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fetch features information from the list</p>
+<dl class="docutils">
+<dt>plist: list of the data set</dt>
+<dd>The list include ROIs and all information within</dd>
+<dt>opt: atr</dt>
+<dd>If the required information are for taining or testing</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="graph_classification.html"
+                        title="previous chapter">3.4.2. graph_classification module</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="mass3Dextraction.html"
+                        title="next chapter">3.5. mass3Dextraction module</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/midt.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="mass3Dextraction.html" title="3.5. mass3Dextraction module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="graph_classification.html" title="3.4.2. graph_classification module"
+             >previous</a> |</li>
+        <li><a href="Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="mass_detection.html" >3. Mass Detection</a> &raquo;</li>
+          <li><a href="Mclassification.html" >3.4. Mass Classification</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, SAP.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,377 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>regionCompairision &mdash; Tomosynthesis Machine Learning 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Tomosynthesis Machine Learning 1.0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for regionCompairision</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;Compare regions in two sides images based on variety of metrics&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.spatial</span> <span class="kn">import</span> <span class="n">distance</span> <span class="k">as</span> <span class="n">dist</span>
+<span class="kn">from</span> <span class="nn">sklearn.decomposition</span> <span class="kn">import</span> <span class="n">ProjectedGradientNMF</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">linalg</span> <span class="k">as</span> <span class="n">LA</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">glob</span>
+<span class="kn">import</span> <span class="nn">cv2</span>
+<span class="kn">import</span> <span class="nn">cv2.cv</span> <span class="kn">as</span> <span class="nn">cv</span>
+
+
+<div class="viewcode-block" id="exHistgram"><a class="viewcode-back" href="../regionCompairision.html#regionCompairision.exHistgram">[docs]</a><span class="k">def</span> <span class="nf">exHistgram</span><span class="p">(</span><span class="n">imregion</span><span class="p">,</span> <span class="n">lb</span> <span class="o">=</span> <span class="mi">2000</span><span class="p">,</span> <span class="n">up</span> <span class="o">=</span> <span class="mi">8000</span><span class="p">,</span><span class="n">s_bin</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">normalize</span> <span class="o">=</span> <span class="bp">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Extract histogram from a image region.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    imregion : numpy array (2D)</span>
+<span class="sd">        The image region data</span>
+<span class="sd">    lb : integer</span>
+<span class="sd">        Lower bound of the histogram</span>
+<span class="sd">    ub : integer</span>
+<span class="sd">        Upper bound of the histogram</span>
+<span class="sd">    s_bin:</span>
+<span class="sd">        The bin size of the histogram</span>
+<span class="sd">    normalize: bool</span>
+<span class="sd">        If or not to normalize the histogram</span>
+<span class="sd">        </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c">## create bins with input lower bound, upper bound and bin size</span>
+    <span class="n">bins</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">lb</span><span class="p">,</span><span class="n">up</span><span class="p">,</span><span class="n">s_bin</span><span class="p">)</span>
+
+    <span class="c">## convert matrix into histogram</span>
+    <span class="n">histgram</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">imregion</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">imregion</span><span class="o">.</span><span class="n">size</span><span class="p">),</span> <span class="n">bins</span><span class="p">)</span>
+    
+    <span class="c"># normalize</span>
+    <span class="k">if</span> <span class="n">normalize</span><span class="p">:</span>
+        <span class="n">histgram</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="n">histgram</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">histgram</span>
+
+</div>
+<div class="viewcode-block" id="compHist"><a class="viewcode-back" href="../regionCompairision.html#regionCompairision.compHist">[docs]</a><span class="k">def</span> <span class="nf">compHist</span><span class="p">(</span><span class="n">hist1</span><span class="p">,</span> <span class="n">hist2</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">formula</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Compare two histograms with given method and formula.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    hist1 : 1D array</span>
+<span class="sd">        The first histogram</span>
+<span class="sd">    hist2 : 1D array</span>
+<span class="sd">        The second histogram</span>
+<span class="sd">    method : str(cv integer)</span>
+<span class="sd">        Options for method (&#39;cv_comp&#39;, &#39;scipy_comp&#39;, &#39;kl_div&#39;)</span>
+<span class="sd">    formula: str(cv integer)</span>
+<span class="sd">        Options for formula.</span>
+<span class="sd">        For method == &#39;cv_comp&#39; (cv.CV_COMP_CORREL, cv.CV_COMP_CHISQR, cv.CV_COMP_INTERSECT, cv.CV_COMP_BHATTACHARYYA)</span>
+<span class="sd">        For method == &#39;scipy_comp&#39; (&quot;Euclidean&quot;, &quot;Manhattan&quot;, &quot;Chebysev&quot;)</span>
+<span class="sd">        </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c">## using opencv</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s">&#39;cv_comp&#39;</span><span class="p">:</span>
+        <span class="n">dis</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">compareHist</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">hist1</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">hist2</span><span class="p">),</span> <span class="n">formula</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">formula</span> <span class="o">==</span> <span class="n">cv</span><span class="o">.</span><span class="n">CV_COMP_CORREL</span><span class="p">:</span>
+            <span class="n">dis</span> <span class="o">=</span> <span class="o">-</span><span class="n">dis</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="c">## using Scipy distance metrics</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s">&#39;scipy_comp&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">formula</span> <span class="o">==</span> <span class="s">&#39;Euclidean&#39;</span><span class="p">:</span>
+            <span class="n">dis</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">euclidean</span><span class="p">(</span><span class="n">hist1</span><span class="p">,</span> <span class="n">hist2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">formula</span> <span class="o">==</span> <span class="s">&#39;Manhattan&#39;</span><span class="p">:</span>
+            <span class="n">dis</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">cityblock</span><span class="p">(</span><span class="n">hist1</span><span class="p">,</span> <span class="n">hist2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">formula</span> <span class="o">==</span> <span class="s">&#39;Chebysev&#39;</span><span class="p">:</span>
+            <span class="n">dis</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">chebyshev</span><span class="p">(</span><span class="n">hist1</span><span class="p">,</span> <span class="n">hist2</span><span class="p">)</span>
+
+    <span class="c">## using KL divergence</span>
+    <span class="n">hist1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">hist1</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">hist2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">hist2</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>     
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s">&#39;kl_div&#39;</span><span class="p">:</span>
+        <span class="n">kbp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">hist1</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">hist1</span> <span class="o">/</span> <span class="n">hist2</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">kbq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">hist2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">hist2</span> <span class="o">/</span> <span class="n">hist1</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="n">dis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">double</span><span class="p">(</span><span class="n">kbp</span> <span class="o">+</span> <span class="n">kbq</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
+
+    <span class="k">return</span> <span class="n">dis</span>
+
+</div>
+<div class="viewcode-block" id="tempMatch"><a class="viewcode-back" href="../regionCompairision.html#regionCompairision.tempMatch">[docs]</a><span class="k">def</span> <span class="nf">tempMatch</span><span class="p">(</span><span class="n">imregion1</span><span class="p">,</span><span class="n">imregion2</span><span class="p">,</span><span class="n">method</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Compare two image regions with given method.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    imregion1 : 2D array</span>
+<span class="sd">        The image data of region 1</span>
+<span class="sd">    imregion2 : 2D array</span>
+<span class="sd">        The image data of region 2</span>
+<span class="sd">    method : cv integer</span>
+<span class="sd">        Options for method (cv.CV_TM_SQDIFF, cv.CV_TM_SQDIFF_NORMED, cv.CV_TM_CCORR,</span>
+<span class="sd">        cv.CV_TM_CCORR_NORMED, cv. CV_TM_CCOEFF, CV_TM_CCOEFF_NORMED)</span>
+<span class="sd">        </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c"># Apply template Matching</span>
+    <span class="n">dis</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">matchTemplate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">imregion1</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">imregion2</span><span class="p">),</span><span class="n">method</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="n">cv</span><span class="o">.</span><span class="n">CV_TM_SQDIFF_NORMED</span> <span class="ow">or</span> <span class="n">method</span> <span class="o">==</span> <span class="n">cv</span><span class="o">.</span><span class="n">CV_TM_CCOEFF_NORMED</span><span class="p">:</span>
+        <span class="n">dis</span> <span class="o">=</span> <span class="mi">1</span><span class="o">-</span><span class="n">dis</span>
+
+    <span class="k">return</span> <span class="n">dis</span>
+
+</div>
+<div class="viewcode-block" id="matdecomp"><a class="viewcode-back" href="../regionCompairision.html#regionCompairision.matdecomp">[docs]</a><span class="k">def</span> <span class="nf">matdecomp</span><span class="p">(</span><span class="n">imregion</span><span class="p">,</span> <span class="n">method</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Compute matrix decomposition</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    imregion : 2D array</span>
+<span class="sd">        The image region data</span>
+<span class="sd">    method : str</span>
+<span class="sd">        Options for method (&#39;eigen&#39;, &#39;NMF&#39;)</span>
+<span class="sd">        </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s">&#39;eigen&#39;</span><span class="p">:</span>
+        <span class="c">## columns are eigen vectors</span>
+        <span class="n">e_vals</span><span class="p">,</span> <span class="n">e_vecs</span> <span class="o">=</span> <span class="n">LA</span><span class="o">.</span><span class="n">eig</span><span class="p">(</span><span class="n">imregion</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">e_vecs</span>
+
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s">&#39;NMF&#39;</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">ProjectedGradientNMF</span><span class="p">(</span><span class="n">n_components</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="s">&#39;random&#39;</span><span class="p">,</span><span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">imregion</span><span class="p">)</span>
+        
+        <span class="n">comp</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">components_</span>
+        <span class="n">err</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">reconstruction_err_</span>
+
+        <span class="k">return</span> <span class="n">comp</span>
+        
+</div>
+<div class="viewcode-block" id="regionComp"><a class="viewcode-back" href="../regionCompairision.html#regionCompairision.regionComp">[docs]</a><span class="k">def</span> <span class="nf">regionComp</span><span class="p">(</span><span class="n">imregion1</span><span class="p">,</span><span class="n">imregion2</span><span class="p">,</span> <span class="n">dis_opt</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span><span class="n">formula</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Main region comparision function</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    imregion1 : 2D array</span>
+<span class="sd">        The image data of region 1</span>
+<span class="sd">    imregion2 : 2D array</span>
+<span class="sd">        The image data of region 2</span>
+<span class="sd">    dis_opt: str</span>
+<span class="sd">        Options for comparing dimensionality (&#39;1d&#39;, &#39;2d&#39;, &#39;decomp&#39;)</span>
+<span class="sd">    method : str (cv integer)</span>
+<span class="sd">        Options for method </span>
+<span class="sd">    formula: str (cv integer)</span>
+<span class="sd">        Options for formula</span>
+<span class="sd">        </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c">## 1-d distribution comparision    </span>
+    <span class="c"># extract distribution as histogram</span>
+    <span class="n">histg1</span> <span class="o">=</span> <span class="n">exHistgram</span><span class="p">(</span><span class="n">imregion1</span><span class="p">)</span>
+    <span class="n">histg2</span> <span class="o">=</span> <span class="n">exHistgram</span><span class="p">(</span><span class="n">imregion2</span><span class="p">)</span>
+    
+    <span class="c"># compare histogram saimilarity</span>
+    <span class="k">if</span> <span class="n">dis_opt</span> <span class="o">==</span> <span class="s">&#39;1d&#39;</span><span class="p">:</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Options for method includes: &#39;cv_comp&#39;,&#39;scipy_comp&#39;,&#39;kl_div&#39;.</span>
+<span class="sd">        </span>
+<span class="sd">        if method == &#39;cv_comp&#39;, options for formula includes:</span>
+<span class="sd">            cv.CV_COMP_CORREL, cv.CV_COMP_CHISQR, cv.CV_COMP_INTERSECT, cv.CV_COMP_BHATTACHARYYA</span>
+<span class="sd">            the first one yields continuals results</span>
+
+<span class="sd">        if method == &#39;scipy_comp&#39;, options for formula includes:</span>
+<span class="sd">            &quot;Euclidean&quot;, &quot;Manhattan&quot;, &quot;Chebysev&quot;</span>
+<span class="sd">            the first two yield continuals results</span>
+
+<span class="sd">        if method == &#39;kl_div&#39;, no options needed for formula:</span>
+<span class="sd">            formula = &#39;None&#39;</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+                
+        <span class="n">dis_1d</span> <span class="o">=</span> <span class="n">compHist</span><span class="p">(</span><span class="n">histg1</span><span class="p">,</span><span class="n">histg2</span><span class="p">,</span><span class="n">method</span><span class="p">,</span> <span class="n">formula</span><span class="p">)</span>
+            
+        <span class="k">return</span> <span class="n">dis_1d</span>
+
+    <span class="c">## 2-d matrix comparision   </span>
+    <span class="c"># compare matrix correlation</span>
+    <span class="k">if</span> <span class="n">dis_opt</span> <span class="o">==</span> <span class="s">&#39;2d&#39;</span><span class="p">:</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Options for formula includes:</span>
+<span class="sd">        cv.CV_TM_SQDIFF, cv.CV_TM_SQDIFF_NORMED, cv.CV_TM_CCORR, cv.CV_TM_CCORR_NORMED, cv. CV_TM_CCOEFF, CV_TM_CCOEFF_NORMED</span>
+<span class="sd">        Only the normalized ones are used</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">dis_2d</span> <span class="o">=</span> <span class="n">tempMatch</span><span class="p">(</span><span class="n">imregion1</span><span class="p">,</span><span class="n">imregion2</span><span class="p">,</span><span class="n">method</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dis_2d</span>
+
+    <span class="c">## feature based comparision</span>
+    <span class="c"># matrix decomposition</span>
+    <span class="k">if</span> <span class="n">dis_opt</span> <span class="o">==</span> <span class="s">&#39;decomp&#39;</span><span class="p">:</span>
+
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">imregion1</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">200</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Options for method includes:</span>
+<span class="sd">        &#39;eigen&#39;, &#39;NMF&#39;</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">vect1</span> <span class="o">=</span> <span class="n">matdecomp</span><span class="p">(</span><span class="n">imregion1</span><span class="p">,</span> <span class="n">method</span><span class="p">)</span>
+        <span class="n">vect2</span> <span class="o">=</span> <span class="n">matdecomp</span><span class="p">(</span><span class="n">imregion2</span><span class="p">,</span> <span class="n">method</span><span class="p">)</span>
+
+        <span class="c"># compute feature similarity</span>
+        <span class="n">dis_f</span> <span class="o">=</span> <span class="n">vectComp</span><span class="p">(</span><span class="n">vect1</span><span class="p">,</span> <span class="n">vect2</span><span class="p">,</span> <span class="n">numComp</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">dis_f</span>
+</div>
+<div class="viewcode-block" id="vectComp"><a class="viewcode-back" href="../regionCompairision.html#regionCompairision.vectComp">[docs]</a><span class="k">def</span> <span class="nf">vectComp</span><span class="p">(</span><span class="n">vecMat1</span><span class="p">,</span> <span class="n">vecMat2</span><span class="p">,</span> <span class="n">numComp</span> <span class="o">=</span> <span class="mi">2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Compute distance between two vector matrices</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    vecMat1 : </span>
+<span class="sd">        The first vector matrix</span>
+<span class="sd">    vecMat2 : </span>
+<span class="sd">        The second vector matrix</span>
+<span class="sd">    numComp: integer</span>
+<span class="sd">        Number of components remainded</span>
+<span class="sd">        </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">dis</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">numComp</span><span class="p">):</span>
+        <span class="n">dis</span> <span class="o">=</span> <span class="n">dis</span> <span class="o">+</span> <span class="n">compHist</span><span class="p">(</span><span class="n">vecMat1</span><span class="p">[:,</span><span class="n">i</span><span class="p">],</span><span class="n">vecMat2</span><span class="p">[:,</span><span class="n">i</span><span class="p">],</span><span class="n">method</span> <span class="o">=</span> <span class="s">&#39;scipy_comp&#39;</span><span class="p">,</span> <span class="n">formula</span> <span class="o">=</span> <span class="s">&quot;Euclidean&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">dis</span>
+    
+
+</div>
+<div class="viewcode-block" id="imageComp"><a class="viewcode-back" href="../regionCompairision.html#regionCompairision.imageComp">[docs]</a><span class="k">def</span> <span class="nf">imageComp</span><span class="p">(</span><span class="n">im1</span><span class="p">,</span><span class="n">im2</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">region_s</span> <span class="o">=</span> <span class="mi">200</span><span class="p">,</span> <span class="n">olap_s</span> <span class="o">=</span> <span class="mi">200</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Main image comparision function</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    im1 : 2D array</span>
+<span class="sd">        The image data of image 1</span>
+<span class="sd">    im2 : 2D array</span>
+<span class="sd">        The image data of image 2</span>
+<span class="sd">    params: tuple</span>
+<span class="sd">        Options of method and formula for comparing </span>
+<span class="sd">    region_s : integer</span>
+<span class="sd">        Cropping region size</span>
+<span class="sd">    olap_s: integer</span>
+<span class="sd">        Overlapping size.</span>
+<span class="sd">        </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c"># construct result image</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">im1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">im2</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">im1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">im2</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">dis_im</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">r</span><span class="p">,</span><span class="n">c</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+    <span class="c"># calculate number of regions</span>
+    <span class="n">n_rr</span> <span class="o">=</span> <span class="n">r</span><span class="o">/</span><span class="n">olap_s</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="n">n_cr</span> <span class="o">=</span> <span class="n">c</span><span class="o">/</span><span class="n">olap_s</span> <span class="o">-</span> <span class="mi">1</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_rr</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_cr</span><span class="p">):</span>
+            <span class="n">imregion1</span> <span class="o">=</span> <span class="n">im1</span><span class="p">[(</span><span class="n">i</span><span class="o">*</span><span class="n">olap_s</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="n">i</span><span class="o">*</span><span class="n">olap_s</span><span class="o">+</span><span class="n">region_s</span><span class="p">),</span> <span class="p">(</span><span class="n">j</span><span class="o">*</span><span class="n">olap_s</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="n">j</span><span class="o">*</span><span class="n">olap_s</span><span class="o">+</span><span class="n">region_s</span><span class="p">)]</span>
+            <span class="n">imregion2</span> <span class="o">=</span> <span class="n">im2</span><span class="p">[(</span><span class="n">i</span><span class="o">*</span><span class="n">olap_s</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="n">i</span><span class="o">*</span><span class="n">olap_s</span><span class="o">+</span><span class="n">region_s</span><span class="p">),</span> <span class="p">(</span><span class="n">j</span><span class="o">*</span><span class="n">olap_s</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="n">j</span><span class="o">*</span><span class="n">olap_s</span><span class="o">+</span><span class="n">region_s</span><span class="p">)]</span>
+            <span class="n">dis_im</span><span class="p">[(</span><span class="n">i</span><span class="o">*</span><span class="n">olap_s</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="n">i</span><span class="o">*</span><span class="n">olap_s</span><span class="o">+</span><span class="n">region_s</span><span class="p">),</span> <span class="p">(</span><span class="n">j</span><span class="o">*</span><span class="n">olap_s</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="n">j</span><span class="o">*</span><span class="n">olap_s</span><span class="o">+</span><span class="n">region_s</span><span class="p">)]</span> <span class="o">=</span> <span class="n">regionComp</span><span class="p">(</span><span class="n">imregion1</span><span class="p">,</span><span class="n">imregion2</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">params</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">params</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">dis_im</span>
+
+    
+
+    
+    
+    
+    
+    
+        
+            
+
+
+        
+</pre></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, SAP.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

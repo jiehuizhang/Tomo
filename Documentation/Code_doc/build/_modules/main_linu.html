@@ -1,0 +1,511 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>main_linu &mdash; Tomosynthesis Machine Learning 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Tomosynthesis Machine Learning 1.0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for main_linu</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Pool</span>
+<span class="kn">import</span> <span class="nn">gc</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy.ndimage.filters</span> <span class="kn">as</span> <span class="nn">filters</span>
+<span class="c">#from pylab import *</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+
+<span class="kn">import</span> <span class="nn">ImageIO</span>
+<span class="kn">import</span> <span class="nn">TImage</span>
+<span class="kn">import</span> <span class="nn">TPatch</span>
+<span class="kn">import</span> <span class="nn">ShapeIndex</span>
+<span class="kn">import</span> <span class="nn">histEqualization</span>
+<span class="kn">import</span> <span class="nn">AT_denoising</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">misc</span>
+<span class="kn">import</span> <span class="nn">tiffLib</span>
+<span class="kn">import</span> <span class="nn">gabor_filter</span>
+<span class="kn">import</span> <span class="nn">Response_Analysis</span> <span class="kn">as</span> <span class="nn">ra</span>
+<span class="kn">import</span> <span class="nn">bsckground_Substraction</span> <span class="kn">as</span> <span class="nn">bs</span>
+<span class="kn">import</span> <span class="nn">feat_Extraction</span> <span class="kn">as</span> <span class="nn">fex</span>
+<span class="kn">import</span> <span class="nn">MC_Detection</span> <span class="kn">as</span> <span class="nn">mc</span>
+<span class="kn">import</span> <span class="nn">Creat_trainSam</span>
+<span class="kn">import</span> <span class="nn">mass3Dextraction</span> <span class="kn">as</span> <span class="nn">mass3d</span>
+<span class="kn">import</span> <span class="nn">Dimreduction</span>
+<span class="kn">import</span> <span class="nn">classification</span>
+<span class="kn">import</span> <span class="nn">graph_classification</span> <span class="kn">as</span> <span class="nn">grc</span>
+<span class="kn">import</span> <span class="nn">activeContourSegmentation</span> <span class="kn">as</span> <span class="nn">acSeg</span>
+<span class="kn">import</span> <span class="nn">morphsnakes</span>
+
+<div class="viewcode-block" id="f"><a class="viewcode-back" href="../main_linu.html#main_linu.f">[docs]</a><span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">):</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">factorial</span><span class="p">(</span><span class="mi">200</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">x</span><span class="o">*</span><span class="n">y</span>
+</div>
+<div class="viewcode-block" id="f_wrapper"><a class="viewcode-back" href="../main_linu.html#main_linu.f_wrapper">[docs]</a><span class="k">def</span> <span class="nf">f_wrapper</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+    
+    <span class="k">return</span> <span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+
+    <span class="c">############################## single smv convert #######################</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    dataPath = &#39;/home/TomosynthesisData/Cancer_25_cases/5092/&#39;</span>
+<span class="sd">    outputPath = &#39;/home/yanbin/Tomosynthesis/data/5092/&#39;</span>
+<span class="sd">    fileName = &#39;5092Recon08.smv_AutoCrop.smv&#39;</span>
+<span class="sd">    im = ImageIO.imReader(dataPath,fileName, &#39;smv&#39;)</span>
+<span class="sd">    ImageIO.imWriter(outputPath,&#39;5092.tif&#39;,im,3)</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="c">################## single tiff slice preprocessing ########################</span>
+    <span class="sd">&#39;&#39;&#39;dataPath = &#39;C:/Tomosynthesis/localtest/&#39;</span>
+<span class="sd">    fileName = &#39;test-crop.tif&#39;</span>
+<span class="sd">    im = ImageIO.imReader(dataPath,fileName, &#39;tif&#39;,2)</span>
+
+<span class="sd">    ## Equalization</span>
+<span class="sd">    eqimg = histEqualization.histEqualization(im.data[0], 16)</span>
+<span class="sd">    tiffLib.imsave(dataPath + &#39;test_eq.tif&#39;,eqimg)</span>
+
+<span class="sd">    ## Denoising</span>
+<span class="sd">    denoised = AT_denoising.DenoisingAW(im.data[0])</span>
+<span class="sd">    tiffLib.imsave(dataPath + &#39;test_denoised.tif&#39;,denoised)</span>
+
+<span class="sd">    ## Equlization + Denoising</span>
+<span class="sd">    eq_denoised = AT_denoising.DenoisingAW(eqimg)</span>
+<span class="sd">    tiffLib.imsave(dataPath + &#39;test_eq_denoised.tif&#39;,eq_denoised)</span>
+
+<span class="sd">    ## Denoised + Equalization</span>
+<span class="sd">    de_eq = histEqualization.histEqualization(denoised, 16)</span>
+<span class="sd">    tiffLib.imsave(dataPath + &#39;test_de_eq.tif&#39;,de_eq)&#39;&#39;&#39;</span>
+
+    <span class="c">############################ Gabor test #############################</span>
+    <span class="sd">&#39;&#39;&#39;## Gabor kernel test</span>
+<span class="sd">    dataPath = &#39;C:/Tomosynthesis/localtest/&#39;</span>
+<span class="sd">    outputPath = &#39;C:/Tomosynthesis/localtest/res/&#39;</span>
+<span class="sd">    fileName = &#39;test-crop.tif&#39;</span>
+<span class="sd">    im = ImageIO.imReader(dataPath,fileName, &#39;tif&#39;,2)</span>
+
+<span class="sd">    kernels = gabor_filter.creat_Gabor_Kernels(4, 20, 0.0185,0.9)</span>
+<span class="sd">    response = gabor_filter.compute_Response(im.data[0],kernels)</span>
+
+<span class="sd">    gabor_filter.plot_Kernels(kernels)</span>
+<span class="sd">    gabor_filter.plot_Response(response)</span>
+
+<span class="sd">    for i in range(len(kernels)):</span>
+<span class="sd">        tiffLib.imsave(outputPath + str(i) + &#39;kernels.tif&#39;,np.float32(kernels[i]))</span>
+<span class="sd">        tiffLib.imsave(outputPath + str(i) + &#39;response.tif&#39;,np.float32(response[i]))&#39;&#39;&#39;</span>
+
+    <span class="c">## Gabor filter bank test</span>
+    <span class="sd">&#39;&#39;&#39;dataPath = &#39;C:/Tomosynthesis/localtest/&#39;</span>
+<span class="sd">    outputPath = &#39;C:/Tomosynthesis/localtest/res/&#39;</span>
+<span class="sd">    fileName = &#39;7742_39-0026-2skeleton.tif&#39;</span>
+<span class="sd">    im = ImageIO.imReader(dataPath,fileName, &#39;tif&#39;,2)</span>
+
+<span class="sd">    norietation = 4</span>
+<span class="sd">    sigmas = (5,10,15,10)</span>
+<span class="sd">    frequencies = (0.01,0,05,0.1)</span>
+<span class="sd">    gammas = (1,1,5)</span>
+
+<span class="sd">    filter_bank = gabor_filter.creat_FilterBank(norietation,sigmas,frequencies,gammas)</span>
+<span class="sd">    responses = gabor_filter.compute_Responses(im.data[0],filter_bank)</span>
+
+<span class="sd">    for i in range(len(filter_bank)):</span>
+<span class="sd">        print i</span>
+<span class="sd">        for j in range(len(filter_bank[i])):</span>
+<span class="sd">            tiffLib.imsave(outputPath + str(i)+&#39;_&#39;+ str(j)+&#39;_&#39; + &#39;kernels.tif&#39;,np.float32(filter_bank[i][j]))</span>
+<span class="sd">            tiffLib.imsave(outputPath + str(i)+&#39;_&#39;+ str(j)+&#39;_&#39; + &#39;response.tif&#39;,np.float32(responses[i][j]))&#39;&#39;&#39;</span>
+    
+
+    <span class="c">## Gabor kernel response analysis test</span>
+    <span class="sd">&#39;&#39;&#39;dataPath = &#39;C:/Tomosynthesis/localtest/&#39;</span>
+<span class="sd">    outputPath = &#39;C:/Tomosynthesis/localtest/res/&#39;</span>
+<span class="sd">    fileName = &#39;test-crop.tif&#39;</span>
+<span class="sd">    im = ImageIO.imReader(dataPath,fileName, &#39;tif&#39;,2)</span>
+
+<span class="sd">    params = []</span>
+<span class="sd">    params.append([4, 20, 0.0185,0.9])</span>
+<span class="sd">    #params.append([4, 5, 0.01,1])</span>
+<span class="sd">    #params.append([4, 5, 0.025,1])</span>
+<span class="sd">    #params.append([4, 5, 0.05,1])</span>
+<span class="sd">    #params.append([4, 5, 0.075,1])</span>
+
+<span class="sd">    #params.append([4, 10, 0.01,1])</span>
+<span class="sd">    #params.append([4, 10, 0.025,1.7])</span>
+<span class="sd">    #params.append([4, 10, 0.05,1])</span>
+
+<span class="sd">    #params.append([4, 15, 0.01,1])</span>
+<span class="sd">    #params.append([4, 15, 0.0175,1.5])</span>
+<span class="sd">    #params.append([4, 15, 0.025,1])</span>
+
+<span class="sd">    #params.append([4, 20, 0.01,1])</span>
+<span class="sd">    #params.append([4, 20, 0.0175,1])</span>
+<span class="sd">    #params.append([4, 20, 0.0175,1])</span>
+<span class="sd">    </span>
+<span class="sd">    for k in range(len(params)):</span>
+<span class="sd">        sampRate = 30</span>
+<span class="sd">        winSize = 15</span>
+<span class="sd">        kernels = gabor_filter.creat_Gabor_Kernels(params[k][0],params[k][1],params[k][2],params[k][3])</span>
+<span class="sd">        response = gabor_filter.compute_Response(im.data[0],kernels)</span>
+<span class="sd">        (batchResp, integratedResp) = ra.cerat_batch_response(response,sampRate,winSize)</span>
+<span class="sd">        poll = ra.vote(batchResp)</span>
+<span class="sd">        integrated_poll = ra.integrating_poll(poll,sampRate,winSize,response[0].shape)</span>
+<span class="sd">        </span>
+<span class="sd">        tiffLib.imsave(outputPath + str(k) + &#39;poll.tif&#39;,np.float32(poll))</span>
+<span class="sd">        tiffLib.imsave(outputPath + str(k) + &#39;integrated_poll.tif&#39;,np.float32(integrated_poll))</span>
+<span class="sd">        </span>
+<span class="sd">        for i in range(len(response)):                         </span>
+<span class="sd">            tiffLib.imsave(outputPath + str(k) + &#39;_&#39; + str(i) + &#39;kernels.tif&#39;,np.float32(kernels[i]))</span>
+<span class="sd">            tiffLib.imsave(outputPath + str(k) + &#39;_&#39; + str(i) + &#39;response.tif&#39;,np.float32(response[i]))</span>
+<span class="sd">            tiffLib.imsave(outputPath + str(k) + &#39;_&#39; + str(i) + &#39;batchResp.tif&#39;,np.float32(batchResp[i]))</span>
+<span class="sd">            tiffLib.imsave(outputPath + str(k) + &#39;_&#39; + str(i) + &#39;integratedResp.tif&#39;,np.float32(integratedResp[i]))</span>
+<span class="sd">        patches = fex.patch_Extraction(im.data[0],poll,0,sampRate,90,7.5)</span>
+<span class="sd">        patches_feats = np.zeros((1,10), dtype=np.double)</span>
+<span class="sd">        for i in range(len(patches)):</span>
+<span class="sd">            patches[i].getRings(numrings = 5)</span>
+<span class="sd">            patches[i].getMeanFeats()</span>
+<span class="sd">            patches[i].getVarFeats()</span>
+<span class="sd">            patches_feats = np.vstack((patches_feats,patches[i].dumpFeats()))</span>
+<span class="sd">            </span>
+<span class="sd">        np.savetxt(outputPath + &#39;patches_feats.txt&#39;, patches_feats, delimiter=&#39;\t&#39;)   </span>
+<span class="sd">        for i in range(len(patches)):</span>
+<span class="sd">            tiffLib.imsave(outputPath + str(i) + &#39;patches.tif&#39;,np.float32(patches[i].pdata))&#39;&#39;&#39;</span>
+
+    <span class="c">############################# Mass 3D Extraction sequentialy ########################</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    dataPath = &#39;C:/Tomosynthesis/localtest/&#39;</span>
+<span class="sd">    fileName = &#39;test-crop.tif&#39; </span>
+<span class="sd">    im = ImageIO.imReader(dataPath,fileName, &#39;tif&#39;,3)</span>
+<span class="sd">    </span>
+<span class="sd">    mass3d.Mass3dExtra(im)</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="c">############################ LOG test #############################</span>
+    <span class="c"># 2d test</span>
+    <span class="sd">&#39;&#39;&#39;dataPath = &#39;C:/Tomosynthesis/localtest/&#39;</span>
+<span class="sd">    outputPath = &#39;C:/Tomosynthesis/localtest/res/&#39;</span>
+<span class="sd">    #fileName = &#39;5016EMML08_17.tif&#39;</span>
+<span class="sd">    fileName = &#39;MC_1_5092Recon08_16-1.tif&#39;</span>
+<span class="sd">    im = ImageIO.imReader(dataPath,fileName, &#39;tif&#39;,2) </span>
+<span class="sd">    </span>
+<span class="sd">    log = mc.log_filtering(im.data[0],winSize=40,sigma=3,fg_thresh = 0.6)</span>
+<span class="sd">    constrained_log = mc.laebl_connecte_comp(log,threshold=3.0,size_constrain = (2,80))</span>
+<span class="sd">    mcList = mc.MC_buildup_2d(im.data[0],constrained_log)</span>
+<span class="sd">    mc.MC_connect_2d(mcList,dis_threshold = 300)</span>
+<span class="sd">    for i in range(len(mcList)):</span>
+<span class="sd">        print mcList[i].density_2d</span>
+
+<span class="sd">    </span>
+<span class="sd">    tiffLib.imsave(outputPath + &#39;log_constrained.tif&#39;,np.float32(constrained_log))</span>
+<span class="sd">    tiffLib.imsave(outputPath + &#39;log_tile.tif&#39;,np.float32(log))&#39;&#39;&#39;</span>
+
+    <span class="c"># 3d test</span>
+    <span class="sd">&#39;&#39;&#39;dataPath = &#39;C:/Tomosynthesis/localtest/&#39;</span>
+<span class="sd">    outputPath = &#39;C:/Tomosynthesis/localtest/res/5092/&#39;</span>
+<span class="sd">    fileName = &#39;5092-2.tif&#39;</span>
+<span class="sd">    im = ImageIO.imReader(dataPath,fileName, &#39;tif&#39;,3)</span>
+<span class="sd">    </span>
+<span class="sd">    start = time.clock()</span>
+<span class="sd">    mc_Lists = []</span>
+<span class="sd">    for i in range(im.size_2):</span>
+<span class="sd">        log = mc.log_filtering(im.data[i],winSize=40,sigma=3,fg_thresh = 0.6)</span>
+<span class="sd">        constrained_log = mc.laebl_connecte_comp(log,threshold=3.0,size_constrain = (2,80))</span>
+<span class="sd">        mcList = mc.MC_buildup_2d(im.data[i],constrained_log)</span>
+<span class="sd">        mc.MC_connect_2d(mcList,dis_threshold = 300)</span>
+<span class="sd">        for mc_item in mcList:</span>
+<span class="sd">            mc_item.center[2] = i</span>
+<span class="sd">        mc_Lists.append(mcList)</span>
+<span class="sd">        tiffLib.imsave(outputPath + str(i) + &#39;log_constrained.tif&#39;,np.float32(constrained_log))</span>
+<span class="sd">    end = time.clock()</span>
+<span class="sd">    print end - start</span>
+<span class="sd">    </span>
+<span class="sd">    global_id = mc.MC_connect_3d(mc_Lists)</span>
+<span class="sd">    gloabal_list = mc.MCs_constuct_3d(mc_Lists,global_id)</span>
+<span class="sd">    MC_List_3D = mc.MCs_constrain(gloabal_list)</span>
+
+<span class="sd">    for item in MC_List_3D:</span>
+<span class="sd">        print(item.center, item.intensity, item.volume)&#39;&#39;&#39;</span>
+    
+    <span class="c"># 3d parallel test</span>
+    <span class="sd">&#39;&#39;&#39;dataPath = &#39;C:/Tomosynthesis/localtest/&#39;</span>
+<span class="sd">    outputPath = &#39;C:/Tomosynthesis/localtest/res/5092/&#39;</span>
+<span class="sd">    fileName = &#39;5092-1.tif&#39;</span>
+<span class="sd">    im = ImageIO.imReader(dataPath,fileName, &#39;tif&#39;,3)</span>
+<span class="sd">    print &#39;Finished Loading!&#39;</span>
+
+<span class="sd">    start = time.clock()</span>
+<span class="sd">    mc_Lists = []   </span>
+<span class="sd">    pool = Pool(processes=3)</span>
+<span class="sd">    params =[(i,im.data[i]) for i in range(im.size_2)]</span>
+<span class="sd">    mc_Lists = pool.map(mc.parallelWrapper,params)</span>
+<span class="sd">    end = time.clock()</span>
+<span class="sd">    print end - start</span>
+<span class="sd">    </span>
+<span class="sd">    global_id = mc.MC_connect_3d(mc_Lists)</span>
+<span class="sd">    gloabal_list = mc.MCs_constuct_3d(mc_Lists,global_id)</span>
+<span class="sd">    MC_List_3D = mc.MCs_constrain(gloabal_list)</span>
+
+<span class="sd">    for item in MC_List_3D:</span>
+<span class="sd">        print(item.center, item.intensity, item.volume)  &#39;&#39;&#39;</span>
+
+    <span class="c">############################ Creat Training Sample #############################</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    dataPath = &#39;C:/Tomosynthesis/training/cancer/&#39;</span>
+<span class="sd">    outputPath = &#39;C:/Tomosynthesis/localtest/res/&#39;</span>
+
+<span class="sd">    </span>
+<span class="sd">    ## Rings intensity features </span>
+<span class="sd">    rings_feats = Creat_trainSam.creatTrainigSam(dataPath,opt = &#39;Rings&#39;, numrings = 8)</span>
+<span class="sd">    np.savetxt(outputPath + &#39;rings_feats_cancer.txt&#39;, rings_feats, delimiter=&#39;\t&#39;)</span>
+<span class="sd">    </span>
+<span class="sd">    ## FD featues</span>
+<span class="sd">    FD_feats = Creat_trainSam.creatTrainigSam(dataPath,opt = &#39;FD&#39;)</span>
+<span class="sd">    np.savetxt(outputPath + &#39;FD_feats_cancer.txt&#39;, FD_feats, delimiter=&#39;\t&#39;)</span>
+
+<span class="sd">    ## HOG features</span>
+<span class="sd">    hog_feats = Creat_trainSam.creatTrainigSam(dataPath,opt = &#39;HOG&#39;)</span>
+<span class="sd">    np.savetxt(outputPath + &#39;hog_feats_cancer.txt&#39;, hog_feats, delimiter=&#39;\t&#39;)</span>
+
+<span class="sd">    feats = np.hstack((rings_feats,FD_feats,hog_feats))</span>
+<span class="sd">    np.savetxt(outputPath + &#39;feats_cancer.txt&#39;, feats, delimiter=&#39;\t&#39;)</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+
+    <span class="c">############################ HOG test #############################</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    dataPath = &#39;C:/Tomosynthesis/localtest/&#39;</span>
+<span class="sd">    outputPath = &#39;C:/Tomosynthesis/localtest/res/&#39;</span>
+<span class="sd">    #fileName = &#39;test-crop-1.tif&#39;</span>
+<span class="sd">    fileName = &#39;5131R-recon08_45-1.tif&#39;</span>
+<span class="sd">    im = ImageIO.imReader(dataPath,fileName, &#39;tif&#39;,2)</span>
+
+<span class="sd">    # downsampling</span>
+<span class="sd">    im.downSample(rate = 2)</span>
+<span class="sd">    </span>
+<span class="sd">    # histogram equalization</span>
+<span class="sd">    eqimg = histEqualization.histEqualization(im.sampled_datas[0], 16)</span>
+<span class="sd">    </span>
+<span class="sd">    # smoothing</span>
+<span class="sd">    smoothimg = filters.gaussian_filter(eqimg, sigma = 2, order=0, output=None, mode=&#39;reflect&#39;, cval=0.0, truncate=4.0)</span>
+<span class="sd">    </span>
+<span class="sd">    patch = TPatch.TPatch()</span>
+<span class="sd">    patch.initialize(smoothimg)</span>
+<span class="sd">    patch.computeGradient()</span>
+<span class="sd">    patch.gradOrieNormalize(threshold = 1500)</span>
+<span class="sd">    patch.getGSectors(12)</span>
+<span class="sd">    patch.getNormPerc(norm_th = 135)</span>
+<span class="sd">    patch.getNormLevl()</span>
+
+<span class="sd">    # plot</span>
+<span class="sd">    t = range(patch.normal_percentage.shape[1])</span>
+<span class="sd">    s = patch.normal_percentage[0]</span>
+<span class="sd">    s2 = patch.normal_level[0]</span>
+
+<span class="sd">    figure(1)</span>
+<span class="sd">    subplot(211)</span>
+<span class="sd">    plot(t, s)</span>
+<span class="sd">    grid()</span>
+<span class="sd">    </span>
+<span class="sd">    subplot(212)</span>
+<span class="sd">    plot(t, s2)</span>
+<span class="sd">    title(fileName)</span>
+<span class="sd">    grid()</span>
+<span class="sd">    show()</span>
+
+<span class="sd">    # save </span>
+<span class="sd">    f = open(outputPath + &#39;gsectors.txt&#39;, &#39;w&#39;)</span>
+<span class="sd">    for item in patch.gsectors:</span>
+<span class="sd">        f.write(&quot;%s\n&quot; % item)</span>
+<span class="sd">    f.close()</span>
+<span class="sd">    #np.savetxt(outputPath + &#39;gsectors.txt&#39;, np.asarray(patch.gsectors), delimiter=&#39;\t&#39;)</span>
+<span class="sd">     </span>
+<span class="sd">    tiffLib.imsave(outputPath + fileName[0:11] + &#39;down_sampled.tif&#39;,np.float32(smoothimg))</span>
+<span class="sd">    tiffLib.imsave(outputPath + fileName[0:11] +&#39;gradient_magnitude.tif&#39;,np.float32(patch.gmagnitude))</span>
+<span class="sd">    tiffLib.imsave(outputPath + fileName[0:11] +&#39;gradient_orientation.tif&#39;,np.float32(patch.gorientation))</span>
+<span class="sd">    tiffLib.imsave(outputPath + fileName[0:11] +&#39;gradient_orientation_normalized.tif&#39;,np.float32(patch.gnormorientation))</span>
+<span class="sd">    tiffLib.imsave(outputPath + fileName[0:11] +&#39;gy.tif&#39;,np.float32(patch.gy))</span>
+<span class="sd">    tiffLib.imsave(outputPath + fileName[0:11] +&#39;local_orientation.tif&#39;,np.float32(patch.location_ori))</span>
+<span class="sd">    tiffLib.imsave(outputPath + fileName[0:11] +&#39;reflected_orientation.tif&#39;,np.float32(patch.greflorientation))</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="c">############################ FD Test #############################</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    dataPath = &#39;C:/Tomosynthesis/training/cancer/&#39;</span>
+<span class="sd">    outputPath = &#39;C:/Tomosynthesis/localtest/res/&#39;   </span>
+<span class="sd">    fileName = &#39;5047Recon08_51-1.tif&#39;</span>
+
+<span class="sd">    im = ImageIO.imReader(dataPath,fileName, &#39;tif&#39;,2)</span>
+<span class="sd">    denoised = AT_denoising.DenoisingAW(im.data[0])</span>
+<span class="sd">    eqimg = histEqualization.histEqualization(denoised, 16)</span>
+
+<span class="sd">    patch = TPatch.TPatch()</span>
+<span class="sd">    patch.initialize(eqimg)</span>
+<span class="sd">    FD = patch.getFD()</span>
+<span class="sd">    print FD</span>
+<span class="sd">    tiffLib.imsave(outputPath + &#39;logpolarPSD.tif&#39;,np.float32(np.log10(patch.PSD_polar)))</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="c">############################ Dim reduction test #############################</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    dataPath = &#39;C:/Tomosynthesis/localtest/res/&#39;</span>
+<span class="sd">    outputPath = &#39;C:/Tomosynthesis/localtest/res/&#39;</span>
+<span class="sd">    control_name = &#39;feats_control.txt&#39;</span>
+<span class="sd">    cancer_name = &#39;feats_cancer.txt&#39;</span>
+
+<span class="sd">    control = np.loadtxt(dataPath + control_name)</span>
+<span class="sd">    cancer = np.loadtxt(dataPath + cancer_name)</span>
+
+<span class="sd">    data = np.vstack((control,cancer))</span>
+<span class="sd">    label = np.zeros((control.shape[0] + cancer.shape[0],),np.int)</span>
+<span class="sd">    label[0:control.shape[0]-1] = 1</span>
+
+<span class="sd">    optList = [&#39;rand&#39;,&#39;pca&#39;,&#39;lda&#39;,&#39;iso&#39;,&#39;lle&#39;,&#39;mlle&#39;,&#39;HLLE&#39;,&#39;LTSA&#39;,&#39;randtree&#39;,&#39;spectral&#39;]</span>
+<span class="sd">    pred = []</span>
+<span class="sd">    accu = []</span>
+
+<span class="sd">    for opt in optList:</span>
+<span class="sd">       </span>
+<span class="sd">        data_projected = Dimreduction.dim_Reduction(data, label, opt, n_components=2, visualize = True)</span>
+<span class="sd">        classifier = classification.classifier(data_projected,label)</span>
+<span class="sd">        classifier.train(opt =&#39;SVM&#39;)</span>
+<span class="sd">        classifier.classify()</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="c">############################# Mass 3D extraction ########################################</span>
+      
+    <span class="n">dataPath</span> <span class="o">=</span> <span class="s">&#39;/home/yanbin/Tomosynthesis/data/tiffs_3d/5016/&#39;</span>
+    <span class="n">paraPath</span> <span class="o">=</span> <span class="s">&#39;/home/yanbin/localtest/&#39;</span>
+    <span class="n">outputPath</span> <span class="o">=</span> <span class="s">&#39;/home/yanbin/Tomosynthesis/results/5016/&#39;</span>
+    <span class="n">im_name</span> <span class="o">=</span> <span class="s">&#39;5016EMML08.tif&#39;</span>
+    
+
+    <span class="c"># loading </span>
+    <span class="n">im</span> <span class="o">=</span> <span class="n">ImageIO</span><span class="o">.</span><span class="n">imReader</span><span class="p">(</span><span class="n">dataPath</span><span class="p">,</span><span class="n">im_name</span><span class="p">,</span> <span class="s">&#39;tif&#39;</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span>
+    <span class="k">print</span> <span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">size_0</span><span class="p">,</span><span class="n">im</span><span class="o">.</span><span class="n">size_1</span><span class="p">,</span><span class="n">im</span><span class="o">.</span><span class="n">size_2</span><span class="p">)</span>
+    
+    <span class="n">control_name</span> <span class="o">=</span> <span class="s">&#39;feats_control_1.txt&#39;</span>
+    <span class="n">cancer_name</span> <span class="o">=</span> <span class="s">&#39;feats_cancer.txt&#39;</span>
+    <span class="n">control</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">paraPath</span> <span class="o">+</span> <span class="n">control_name</span><span class="p">)</span>
+    <span class="n">cancer</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">paraPath</span> <span class="o">+</span> <span class="n">cancer_name</span><span class="p">)</span>
+
+    <span class="c"># training</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">control</span><span class="p">,</span><span class="n">cancer</span><span class="p">))</span>
+    <span class="n">label</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">control</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">cancer</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],),</span><span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">)</span>
+    <span class="n">label</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">control</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">1</span>
+    
+    <span class="n">data_projected</span> <span class="o">=</span> <span class="n">Dimreduction</span><span class="o">.</span><span class="n">dim_Reduction</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">opt</span><span class="o">=</span><span class="s">&#39;randtree&#39;</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">visualize</span> <span class="o">=</span> <span class="bp">False</span><span class="p">)</span>
+    <span class="n">classifier</span> <span class="o">=</span> <span class="n">classification</span><span class="o">.</span><span class="n">classifier</span><span class="p">(</span><span class="n">data_projected</span><span class="p">,</span><span class="n">label</span><span class="p">)</span>
+    <span class="n">classifier</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">opt</span> <span class="o">=</span><span class="s">&#39;SVM&#39;</span><span class="p">)</span>
+
+
+    <span class="c"># paralel</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>   
+    <span class="n">pool</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="mi">6</span><span class="p">)</span>
+    <span class="c">#params =[(i,im.data[i],classifier) for i in range(im.size_2)]</span>
+    <span class="n">params</span> <span class="o">=</span><span class="p">[(</span><span class="n">i</span><span class="p">,</span><span class="n">im</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">classifier</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">65</span><span class="p">,</span><span class="mi">69</span><span class="p">)]</span>
+    
+    <span class="n">sliceList</span> <span class="o">=</span> <span class="p">[]</span>   
+    <span class="n">sliceList</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">mass3d</span><span class="o">.</span><span class="n">parallelWrapper</span><span class="p">,</span><span class="n">params</span><span class="p">)</span>
+    
+    <span class="n">end</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
+    <span class="k">print</span> <span class="n">end</span> <span class="o">-</span> <span class="n">start</span>
+
+    <span class="c"># save the workspace</span>
+    <span class="n">output</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">outputPath</span> <span class="o">+</span> <span class="s">&#39;5016.pkl&#39;</span><span class="p">,</span> <span class="s">&#39;wb&#39;</span><span class="p">)</span>
+    <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">sliceList</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span>
+    <span class="n">output</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    
+
+    <span class="c">############################# Mass 3D extraction  Connecting ########################################</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    featPath = &#39;C:/Tomosynthesis/localtest/res/&#39;   </span>
+<span class="sd">    pkl_file = open(path + &#39;workspace.pkl&#39;, &#39;rb&#39;)</span>
+<span class="sd">    im = pickle.load(pkl_file)</span>
+<span class="sd">    pkl_file.close()</span>
+<span class="sd">    print im.size_2</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+        
+
+    
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, SAP.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

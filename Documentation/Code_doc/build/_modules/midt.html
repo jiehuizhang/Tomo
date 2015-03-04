@@ -1,0 +1,228 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>midt &mdash; Tomosynthesis Machine Learning 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Tomosynthesis Machine Learning 1.0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for midt</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;Multi Instance Desiicion Tree Classfication &quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">sklearn</span> <span class="kn">import</span> <span class="n">tree</span>
+
+<span class="kn">import</span> <span class="nn">ImageIO</span>
+<span class="kn">import</span> <span class="nn">TImage</span>
+<span class="kn">import</span> <span class="nn">TPatch</span>
+
+<span class="kn">import</span> <span class="nn">Dimreduction</span>
+
+<div class="viewcode-block" id="ClusteringtoBags"><a class="viewcode-back" href="../midt.html#midt.ClusteringtoBags">[docs]</a><span class="k">def</span> <span class="nf">ClusteringtoBags</span><span class="p">(</span><span class="n">coord</span><span class="p">,</span> <span class="n">dis_thresh</span> <span class="o">=</span> <span class="mi">15</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Clustering ROIs in slices into 3D ROIs, so that 2D ROI with close (x,y)</span>
+<span class="sd">    coordination from adjacent slices  will be assigned into one bag.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    coord: list of coordination</span>
+<span class="sd">        The coordination list for all ROIs</span>
+<span class="sd">    dis_thresh:</span>
+<span class="sd">        Threshold for assigning ROIs into the same bag.</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">bagIDS</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">bagIDS</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">global_bid</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">coord</span><span class="p">)):</span>
+        <span class="n">center_i</span> <span class="o">=</span> <span class="n">coord</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
+            <span class="n">center_j</span> <span class="o">=</span> <span class="n">coord</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+
+            <span class="n">dis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">center_i</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">center_j</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">dis</span> <span class="o">&lt;</span> <span class="n">dis_thresh</span><span class="p">:</span>
+                <span class="n">bagIDS</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bagIDS</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+                <span class="k">break</span>           
+
+            <span class="k">if</span> <span class="n">j</span> <span class="o">==</span> <span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">bagIDS</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">global_bid</span><span class="p">)</span>
+                <span class="n">global_bid</span> <span class="o">=</span> <span class="n">global_bid</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">bagIDS</span><span class="p">,</span><span class="n">global_bid</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="info_fetch"><a class="viewcode-back" href="../midt.html#midt.info_fetch">[docs]</a><span class="k">def</span> <span class="nf">info_fetch</span><span class="p">(</span><span class="n">plist</span><span class="p">,</span><span class="n">opt</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Fetch features information from the list</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    plist: list of the data set</span>
+<span class="sd">        The list include ROIs and all information within</span>
+<span class="sd">    opt: atr</span>
+<span class="sd">        If the required information are for taining or testing</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">coord</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">bagIDS</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">feats</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">if</span> <span class="n">opt</span> <span class="o">==</span> <span class="s">&#39;test&#39;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">plist</span><span class="p">)):</span>
+
+            <span class="k">if</span> <span class="n">feats</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">feats</span> <span class="o">=</span> <span class="n">plist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">feats</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">plist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">feats</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="n">plist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">feats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="n">feats</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+                    <span class="k">print</span> <span class="s">&quot;Nan feature occured!&quot;</span>
+                <span class="n">feats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">feats</span><span class="p">,</span> <span class="n">plist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">feats</span><span class="p">))</span>
+                               
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">plist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">LightPatchList</span><span class="p">)):</span>
+                <span class="n">coord</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">plist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">LightPatchList</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">image_center</span><span class="p">)</span>
+                
+        <span class="k">return</span> <span class="p">(</span><span class="n">feats</span><span class="p">,</span> <span class="n">coord</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">opt</span> <span class="o">==</span> <span class="s">&#39;train&#39;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">plist</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">feats</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">feats</span> <span class="o">=</span> <span class="n">plist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">feats</span>
+            <span class="k">else</span><span class="p">:</span>                
+                <span class="n">feats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">feats</span><span class="p">,</span> <span class="n">plist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">feats</span><span class="p">))</span>
+                
+            <span class="n">bagIDS</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">plist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">bagID</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">feats</span><span class="p">,</span><span class="n">bagIDS</span><span class="p">)</span>
+    </div>
+<div class="viewcode-block" id="classify"><a class="viewcode-back" href="../midt.html#midt.classify">[docs]</a><span class="k">def</span> <span class="nf">classify</span><span class="p">(</span><span class="n">sliceList</span><span class="p">,</span> <span class="n">cancerList</span><span class="p">,</span> <span class="n">controlList</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Main function for classification using multi instance desicion tree</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    sliceList:</span>
+<span class="sd">        List of suspicious data</span>
+<span class="sd">    cancerList:</span>
+<span class="sd">        List positive data</span>
+<span class="sd">    controlList:</span>
+<span class="sd">        List of negative data</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c"># Fetch feature and coordinate information from list</span>
+    <span class="n">fsus</span><span class="p">,</span><span class="n">coordsus</span> <span class="o">=</span> <span class="n">info_fetch</span><span class="p">(</span><span class="n">sliceList</span><span class="p">,</span> <span class="n">opt</span> <span class="o">=</span> <span class="s">&#39;test&#39;</span><span class="p">)</span>
+    <span class="n">fcancer</span><span class="p">,</span><span class="n">bid_canc</span> <span class="o">=</span> <span class="n">info_fetch</span><span class="p">(</span><span class="n">cancerList</span><span class="p">,</span> <span class="n">opt</span> <span class="o">=</span> <span class="s">&#39;train&#39;</span><span class="p">)</span>
+    <span class="n">fcontrol</span><span class="p">,</span><span class="n">bid_cont</span> <span class="o">=</span> <span class="n">info_fetch</span><span class="p">(</span><span class="n">controlList</span><span class="p">,</span> <span class="n">opt</span> <span class="o">=</span> <span class="s">&#39;train&#39;</span><span class="p">)</span>
+
+    <span class="n">numcanc</span> <span class="o">=</span> <span class="n">fcancer</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">numcont</span> <span class="o">=</span> <span class="n">fcontrol</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">numsus</span> <span class="o">=</span> <span class="n">fsus</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="c"># clustering suspicious to bags of ROI</span>
+    <span class="n">bid_sus</span><span class="p">,</span><span class="n">bsize</span> <span class="o">=</span> <span class="n">ClusteringtoBags</span><span class="p">(</span><span class="n">coordsus</span><span class="p">)</span>
+
+    <span class="c"># feature normalization</span>
+    
+    <span class="c"># dimension reduction</span>
+    <span class="n">false_lab</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">numcanc</span><span class="o">+</span><span class="n">numcont</span><span class="o">+</span><span class="n">numsus</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+    <span class="n">data_projected</span> <span class="o">=</span> <span class="n">Dimreduction</span><span class="o">.</span><span class="n">dim_Reduction</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">fcancer</span><span class="p">,</span><span class="n">fcontrol</span><span class="p">,</span><span class="n">fsus</span><span class="p">)),</span> <span class="n">false_lab</span><span class="p">,</span> <span class="n">opt</span> <span class="o">=</span><span class="s">&#39;spectral&#39;</span><span class="p">,</span>
+                                                        <span class="n">n_components</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">visualize</span> <span class="o">=</span> <span class="bp">False</span><span class="p">)</span>    
+    <span class="c"># training desicion tree</span>
+    <span class="n">clc</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">DecisionTreeClassifier</span><span class="p">()</span>
+    <span class="n">clc</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data_projected</span><span class="p">[:</span><span class="n">numcanc</span><span class="o">+</span><span class="n">numcont</span><span class="p">,:],</span><span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">(</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">numcanc</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">numcont</span><span class="p">)</span> <span class="p">)</span> <span class="p">)</span> <span class="p">)</span>
+    
+    <span class="c"># classification instances</span>
+    <span class="n">predicts</span> <span class="o">=</span> <span class="n">clc</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">data_projected</span><span class="p">[</span><span class="n">numcanc</span><span class="o">+</span><span class="n">numcont</span><span class="p">:,:])</span>
+
+    <span class="c"># assigning labels for each bag</span>
+    <span class="n">score</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">bsize</span><span class="p">):</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">bid_sus</span><span class="p">)</span> <span class="o">==</span> <span class="n">i</span>
+        <span class="n">score</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">predicts</span><span class="p">[</span><span class="n">mask</span><span class="p">])</span><span class="o">/</span><span class="n">predicts</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span><span class="o">.</span><span class="n">size</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="n">score</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">&gt;</span><span class="mf">0.5</span><span class="p">:</span>
+            <span class="k">print</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">score</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">coordsus</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">bid_sus</span><span class="p">)</span> <span class="o">==</span> <span class="n">i</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]]</span> <span class="p">)</span>
+
+
+
+     
+
+    
+</pre></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, SAP.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

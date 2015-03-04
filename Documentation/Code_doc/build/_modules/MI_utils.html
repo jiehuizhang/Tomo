@@ -1,0 +1,498 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>MI_utils &mdash; Tomosynthesis Machine Learning 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Tomosynthesis Machine Learning 1.0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for MI_utils</h1><div class="highlight"><pre>
+<span class="c">#    This file is part of pyEntropy</span>
+<span class="c">#</span>
+<span class="c">#    pyEntropy is free software: you can redistribute it and/or modify</span>
+<span class="c">#    it under the terms of the GNU General Public License as published by</span>
+<span class="c">#    the Free Software Foundation, either version 2 of the License, or</span>
+<span class="c">#    (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c">#    pyEntropy is distributed in the hope that it will be useful,</span>
+<span class="c">#    but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c">#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c">#    GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c">#    You should have received a copy of the GNU General Public License</span>
+<span class="c">#    along with pyEntropy. If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+<span class="c">#</span>
+<span class="c">#    Copyright 2009, 2010 Robin Ince</span>
+<span class="sd">&quot;&quot;&quot;Utility functions for working with discrete probability</span>
+<span class="sd">distributions. These functions are exposed in the top-level pyentropy</span>
+<span class="sd">namespace.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">tempfile</span> <span class="kn">import</span> <span class="n">NamedTemporaryFile</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">from</span> <span class="nn">numpy.ma.core</span> <span class="kn">import</span> <span class="n">_MaskedUnaryOperation</span><span class="p">,</span> <span class="n">_DomainGreater</span>
+<span class="kn">import</span> <span class="nn">numpy.core.umath</span> <span class="kn">as</span> <span class="nn">umath</span>
+
+<span class="n">malog2</span> <span class="o">=</span> <span class="n">_MaskedUnaryOperation</span><span class="p">(</span><span class="n">umath</span><span class="o">.</span><span class="n">log2</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">_DomainGreater</span><span class="p">(</span><span class="mf">0.0</span><span class="p">))</span>
+
+<div class="viewcode-block" id="ent"><a class="viewcode-back" href="../MI_utils.html#MI_utils.ent">[docs]</a><span class="k">def</span> <span class="nf">ent</span><span class="p">(</span><span class="n">p</span><span class="p">):</span>
+    <span class="n">mp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="n">copy</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span><span class="n">mask</span><span class="o">=</span><span class="p">(</span><span class="n">p</span><span class="o">&lt;=</span><span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span><span class="p">))</span>
+    <span class="k">return</span> <span class="o">-</span><span class="p">(</span><span class="n">mp</span><span class="o">*</span><span class="n">malog2</span><span class="p">(</span><span class="n">mp</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="prob"><a class="viewcode-back" href="../MI_utils.html#MI_utils.prob">[docs]</a><span class="k">def</span> <span class="nf">prob</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s">&#39;naive&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Sample probability of integer sequence.</span>
+
+<span class="sd">    :Parameters:</span>
+<span class="sd">      x : int array</span>
+<span class="sd">        integer input sequence</span>
+<span class="sd">      m : int</span>
+<span class="sd">        alphabet size of input sequence (max(x)&lt;m)</span>
+<span class="sd">      method: {&#39;naive&#39;, &#39;kt&#39;, &#39;beta:x&#39;,&#39;shrink&#39;}</span>
+<span class="sd">        Sampling method to use. </span>
+
+<span class="sd">    :Returns:</span>
+<span class="sd">      Pr : float array</span>
+<span class="sd">        array representing probability distribution</span>
+<span class="sd">        Pr[i] = P(x=i)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">):</span> 
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="s">&quot;Input must be of integer type&quot;</span>
+    <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">m</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="s">&quot;Input contains values that are too large&quot;</span>
+    
+    <span class="n">C</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">C</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;</span> <span class="n">m</span><span class="p">:</span>   <span class="c"># resize if any responses missed</span>
+        <span class="n">C</span><span class="o">.</span><span class="n">resize</span><span class="p">((</span><span class="n">m</span><span class="p">,))</span>
+    <span class="k">return</span> <span class="n">_probcount</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">method</span><span class="p">)</span>
+
+</div>
+<span class="k">def</span> <span class="nf">_probcount</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s">&#39;naive&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Estimate probability from a vector of bin counts</span>
+<span class="sd">    </span>
+<span class="sd">    :Parameters:</span>
+<span class="sd">      C : int array</span>
+<span class="sd">        integer vector of bin counts</span>
+<span class="sd">      N : int</span>
+<span class="sd">        number of trials</span>
+<span class="sd">      method: {&#39;naive&#39;, &#39;kt&#39;, &#39;beta:x&#39;,&#39;shrink&#39;}</span>
+<span class="sd">        Sampling method to use. </span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">method</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s">&#39;naive&#39;</span><span class="p">:</span>
+        <span class="c"># normal estimate</span>
+        <span class="n">P</span> <span class="o">=</span> <span class="n">C</span><span class="o">/</span><span class="n">N</span>
+    <span class="k">elif</span> <span class="n">method</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s">&#39;kt&#39;</span><span class="p">:</span>
+        <span class="c"># KT (constant addition) estimate</span>
+        <span class="n">P</span> <span class="o">=</span> <span class="p">(</span><span class="n">C</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">N</span> <span class="o">+</span> <span class="p">(</span><span class="n">C</span><span class="o">.</span><span class="n">size</span><span class="o">/</span><span class="mf">2.0</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="n">method</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s">&#39;shrink&#39;</span><span class="p">:</span>
+        <span class="c"># James-Stein shrinkage</span>
+        <span class="c"># http://www.strimmerlab.org/software/entropy/index.html</span>
+        <span class="n">Pnaive</span> <span class="o">=</span> <span class="n">C</span><span class="o">/</span><span class="n">N</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="n">C</span><span class="o">.</span><span class="n">size</span>
+        <span class="n">lam</span> <span class="o">=</span> <span class="n">_get_lambda_shrink</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">Pnaive</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+        <span class="n">P</span> <span class="o">=</span> <span class="p">(</span><span class="n">lam</span> <span class="o">*</span> <span class="n">target</span><span class="p">)</span> <span class="o">+</span> <span class="p">((</span><span class="mi">1</span> <span class="o">-</span> <span class="n">lam</span><span class="p">)</span> <span class="o">*</span> <span class="n">Pnaive</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">method</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s">&#39;beta&#39;</span><span class="p">:</span>
+        <span class="n">beta</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">method</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="c"># general add-constant beta estimate</span>
+        <span class="n">P</span> <span class="o">=</span> <span class="p">(</span><span class="n">C</span> <span class="o">+</span> <span class="n">beta</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">N</span> <span class="o">+</span> <span class="p">(</span><span class="n">beta</span><span class="o">*</span><span class="n">C</span><span class="o">.</span><span class="n">size</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="s">&#39;Unknown sampling method: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">est</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">P</span>
+
+
+<span class="k">def</span> <span class="nf">_get_lambda_shrink</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Lambda shrinkage estimator&quot;&quot;&quot;</span>
+    <span class="c"># *unbiased* estimator of variance of u</span>
+    <span class="n">varu</span> <span class="o">=</span> <span class="n">u</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">u</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">N</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="c"># misspecification</span>
+    <span class="n">msp</span> <span class="o">=</span> <span class="p">((</span><span class="n">u</span><span class="o">-</span><span class="n">target</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+    <span class="c"># estimate shrinkage intensity</span>
+    <span class="k">if</span> <span class="n">msp</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">lam</span> <span class="o">=</span> <span class="mf">1.</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">lam</span> <span class="o">=</span> <span class="p">(</span><span class="n">varu</span><span class="o">/</span><span class="n">msp</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        
+    <span class="c"># truncate</span>
+    <span class="k">if</span> <span class="n">lam</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">lam</span> <span class="o">=</span> <span class="mi">1</span> 
+    <span class="k">elif</span> <span class="n">lam</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">lam</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">return</span> <span class="n">lam</span>
+
+
+<div class="viewcode-block" id="pt_bayescount"><a class="viewcode-back" href="../MI_utils.html#MI_utils.pt_bayescount">[docs]</a><span class="k">def</span> <span class="nf">pt_bayescount</span><span class="p">(</span><span class="n">Pr</span><span class="p">,</span> <span class="n">Nt</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Compute the support for analytic bias correction using the </span>
+<span class="sd">    Bayesian approach of Panzeri and Treves (1996)</span>
+<span class="sd">    </span>
+<span class="sd">    :Parameters:</span>
+<span class="sd">      Pr : 1D aray</span>
+<span class="sd">        Probability vector</span>
+<span class="sd">      Nt : int</span>
+<span class="sd">        Number of trials</span>
+
+<span class="sd">    :Returns:</span>
+<span class="sd">      R : int</span>
+<span class="sd">        Bayesian estimate of support</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="c"># dimension of space</span>
+    <span class="n">dim</span> <span class="o">=</span> <span class="n">Pr</span><span class="o">.</span><span class="n">size</span>
+
+    <span class="c"># non zero probs only</span>
+    <span class="n">PrNZ</span> <span class="o">=</span> <span class="n">Pr</span><span class="p">[</span><span class="n">Pr</span><span class="o">&gt;</span><span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span><span class="p">]</span>
+    <span class="n">Rnaive</span> <span class="o">=</span> <span class="n">PrNZ</span><span class="o">.</span><span class="n">size</span>
+    
+    <span class="n">R</span> <span class="o">=</span> <span class="n">Rnaive</span>
+    <span class="k">if</span> <span class="n">Rnaive</span> <span class="o">&lt;</span> <span class="n">dim</span><span class="p">:</span>
+        <span class="n">Rexpected</span> <span class="o">=</span> <span class="n">Rnaive</span> <span class="o">-</span> <span class="p">((</span><span class="mf">1.0</span><span class="o">-</span><span class="n">PrNZ</span><span class="p">)</span><span class="o">**</span><span class="n">Nt</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="n">deltaR_prev</span> <span class="o">=</span> <span class="n">dim</span>
+        <span class="n">deltaR</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">Rnaive</span> <span class="o">-</span> <span class="n">Rexpected</span><span class="p">)</span>
+        <span class="n">xtr</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">while</span> <span class="p">(</span><span class="n">deltaR</span> <span class="o">&lt;</span> <span class="n">deltaR_prev</span><span class="p">)</span> <span class="ow">and</span> <span class="p">((</span><span class="n">Rnaive</span><span class="o">+</span><span class="n">xtr</span><span class="p">)</span><span class="o">&lt;</span><span class="n">dim</span><span class="p">):</span>
+            <span class="n">xtr</span> <span class="o">=</span> <span class="n">xtr</span><span class="o">+</span><span class="mf">1.0</span>
+            <span class="n">Rexpected</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="c"># occupied bins</span>
+            <span class="n">gamma</span> <span class="o">=</span> <span class="n">xtr</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="p">((</span><span class="n">Nt</span><span class="o">/</span><span class="p">(</span><span class="n">Nt</span><span class="o">+</span><span class="n">Rnaive</span><span class="p">))</span><span class="o">**</span><span class="p">(</span><span class="mf">1.0</span><span class="o">/</span><span class="n">Nt</span><span class="p">)))</span>
+            <span class="n">Pbayes</span> <span class="o">=</span> <span class="p">((</span><span class="mf">1.0</span><span class="o">-</span><span class="n">gamma</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">Nt</span><span class="o">+</span><span class="n">Rnaive</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="n">PrNZ</span><span class="o">*</span><span class="n">Nt</span><span class="o">+</span><span class="mf">1.0</span><span class="p">)</span>
+            <span class="n">Rexpected</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">-</span><span class="n">Pbayes</span><span class="p">)</span><span class="o">**</span><span class="n">Nt</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+            <span class="c"># non-occupied bins</span>
+            <span class="n">Pbayes</span> <span class="o">=</span> <span class="n">gamma</span> <span class="o">/</span> <span class="n">xtr</span>
+            <span class="n">Rexpected</span> <span class="o">=</span> <span class="n">Rexpected</span> <span class="o">+</span> <span class="n">xtr</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">Pbayes</span><span class="p">)</span><span class="o">**</span><span class="n">Nt</span><span class="p">)</span>
+            <span class="n">deltaR_prev</span> <span class="o">=</span> <span class="n">deltaR</span>
+            <span class="n">deltaR</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">Rnaive</span> <span class="o">-</span> <span class="n">Rexpected</span><span class="p">)</span>
+        <span class="n">Rnaive</span> <span class="o">=</span> <span class="n">Rnaive</span> <span class="o">+</span> <span class="n">xtr</span> <span class="o">-</span> <span class="mf">1.0</span>
+        <span class="k">if</span> <span class="n">deltaR</span> <span class="o">&lt;</span> <span class="n">deltaR_prev</span><span class="p">:</span>
+            <span class="n">Rnaive</span> <span class="o">+=</span> <span class="mf">1.0</span>
+    <span class="k">return</span> <span class="n">Rnaive</span>
+
+</div>
+<div class="viewcode-block" id="nsb_entropy"><a class="viewcode-back" href="../MI_utils.html#MI_utils.nsb_entropy">[docs]</a><span class="k">def</span> <span class="nf">nsb_entropy</span><span class="p">(</span><span class="n">P</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">dim</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Calculate NSB entropy of a probability distribution using</span>
+<span class="sd">    external nsb-entropy program.</span>
+
+<span class="sd">    Required `nsb-entropy` installed on system path.</span>
+
+<span class="sd">    :Parameters:</span>
+<span class="sd">      P : 1D array</span>
+<span class="sd">        Probability distribution vector</span>
+<span class="sd">      N : int</span>
+<span class="sd">        Total number of trials</span>
+<span class="sd">      dim : int </span>
+<span class="sd">        Full dimension of space</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">freqs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">P</span><span class="o">*</span><span class="n">N</span><span class="p">)</span>
+    <span class="n">tf</span> <span class="o">=</span> <span class="n">NamedTemporaryFile</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s">&#39;w&#39;</span><span class="p">,</span><span class="n">suffix</span><span class="o">=</span><span class="s">&#39;.txt&#39;</span><span class="p">)</span>
+
+    <span class="c"># write file header</span>
+    <span class="n">tf</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;# type: scalar</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+    <span class="n">tf</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+    <span class="n">tf</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;# rows: 1</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+    <span class="n">tf</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;# columns: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">freqs</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">))</span> <span class="o">+</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+
+    <span class="c"># write data</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">freqs</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">freqs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">+</span><span class="s">&quot; &quot;</span><span class="p">))</span>
+    <span class="n">tf</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+    <span class="n">tf</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="c"># run nsb-entropy application</span>
+    <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">([</span><span class="s">&quot;nsb-entropy&quot;</span><span class="p">,</span><span class="s">&quot;-dpar&quot;</span><span class="p">,</span><span class="s">&quot;-iuni&quot;</span><span class="p">,</span><span class="s">&quot;-cY&quot;</span><span class="p">,</span><span class="s">&quot;-s1&quot;</span><span class="p">,</span><span class="s">&quot;-e1&quot;</span><span class="p">,</span><span class="n">tf</span><span class="o">.</span><span class="n">name</span><span class="p">[:</span><span class="o">-</span><span class="mi">4</span><span class="p">]],</span> 
+                    <span class="n">stdout</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">devnull</span><span class="p">),</span><span class="n">stderr</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">devnull</span><span class="p">))</span>
+
+    <span class="c"># read results</span>
+    <span class="nb">dir</span><span class="p">,</span> <span class="n">fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">out_fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">fname</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&quot;_uni_num&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span><span class="o">+</span><span class="s">&quot;_mf1f0_1_entr.txt&quot;</span>
+    <span class="n">out_fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">dir</span><span class="p">,</span><span class="n">out_fname</span><span class="p">)</span>
+    <span class="n">fd</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">out_fname</span><span class="p">,</span><span class="n">mode</span><span class="o">=</span><span class="s">&#39;r&#39;</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">fd</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+    <span class="n">fd</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">out_fname</span><span class="p">)</span>
+
+    <span class="n">H</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="mi">15</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">dH</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="mi">20</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="p">[</span><span class="n">H</span><span class="p">,</span> <span class="n">dH</span><span class="p">]</span>
+
+</div>
+<div class="viewcode-block" id="dec2base"><a class="viewcode-back" href="../MI_utils.html#MI_utils.dec2base">[docs]</a><span class="k">def</span> <span class="nf">dec2base</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">digits</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Convert decimal value to a row of values representing it in a </span>
+<span class="sd">    given base.</span>
+<span class="sd">    </span>
+<span class="sd">    :Parameters:</span>
+<span class="sd">      x : (t,) or (t,1) int array</span>
+<span class="sd">        Array of decimilised values</span>
+<span class="sd">      b : int</span>
+<span class="sd">        Base for convergence (finite alphabet size)</span>
+<span class="sd">      digits : int</span>
+<span class="sd">        Length of output word for each trial</span>
+
+<span class="sd">    :Returns:</span>
+<span class="sd">     y : (t, digits)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="s">&quot;Input x must be integer&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
+        <span class="c"># 1D vector</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">x</span><span class="p">,(</span><span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">xs</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
+    <span class="k">if</span> <span class="n">xs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="s">&quot;Input x must be a 1D array or column vector!&quot;</span>
+
+    <span class="n">power</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">xs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="mi">1</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="n">b</span> <span class="o">**</span> <span class="n">np</span><span class="o">.</span><span class="n">c_</span><span class="p">[</span><span class="n">digits</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mf">0.5</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">,]</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">x</span><span class="p">,(</span><span class="mi">1</span><span class="p">,</span><span class="n">digits</span><span class="p">))</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">remainder</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">b</span><span class="o">*</span><span class="n">power</span><span class="p">)</span> <span class="o">/</span> <span class="n">power</span> <span class="p">)</span>
+    <span class="k">return</span> <span class="n">y</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="base2dec"><a class="viewcode-back" href="../MI_utils.html#MI_utils.base2dec">[docs]</a><span class="k">def</span> <span class="nf">base2dec</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Convert base-b words to decimal values.</span>
+
+<span class="sd">    :Parameters:</span>
+<span class="sd">      x : (t, n) int array</span>
+<span class="sd">        Array of t length-n base-b words</span>
+<span class="sd">      b : int</span>
+<span class="sd">        Base (size of finite alphabet)</span>
+
+<span class="sd">    :Returns:</span>
+<span class="sd">      d_x: (t,)</span>
+<span class="sd">        Array of decimalised values</span>
+<span class="sd">    </span>
+<span class="sd">    Note, this is the same as decimalise except input x is ordered </span>
+<span class="sd">    differently (here x[t,n] - ie columns are trials).</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">xs</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">b</span><span class="o">**</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">((</span><span class="n">xs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">d_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">d_x</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="decimalise"><a class="viewcode-back" href="../MI_utils.html#MI_utils.decimalise">[docs]</a><span class="k">def</span> <span class="nf">decimalise</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Convert base-b words to decimal values</span>
+
+<span class="sd">    :Parameters:</span>
+<span class="sd">      x : (n, t) int array</span>
+<span class="sd">        Array of t length-n base-b words</span>
+<span class="sd">      b : int</span>
+<span class="sd">        Base (size of finite alphabet)</span>
+
+<span class="sd">    :Returns:</span>
+<span class="sd">      d_x: (t,)</span>
+<span class="sd">        Array of decimalised values</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">n</span> <span class="ow">or</span> <span class="n">x</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">b</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="s">&quot;Input vector x doesnt match parameters&quot;</span>
+    <span class="n">powers</span> <span class="o">=</span> <span class="n">b</span><span class="o">**</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">d_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">T</span><span class="p">,</span><span class="n">powers</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">d_x</span>
+
+</div>
+<div class="viewcode-block" id="quantise"><a class="viewcode-back" href="../MI_utils.html#MI_utils.quantise">[docs]</a><span class="k">def</span> <span class="nf">quantise</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">uniform</span><span class="o">=</span><span class="s">&#39;sampling&#39;</span><span class="p">,</span> <span class="n">minmax</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+             <span class="n">centers</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Quantise 1D input vector into m levels (unsigned)</span>
+
+<span class="sd">    :Parameters:</span>
+<span class="sd">      uniform : {&#39;sampling&#39;,&#39;bins&#39;}</span>
+<span class="sd">        Determine whether quantisation is uniform for sampling (equally </span>
+<span class="sd">        occupied bins) or the bins have uniform widths</span>
+<span class="sd">      minmax : tuple (min,max)</span>
+<span class="sd">        Specify the range for uniform=&#39;bins&#39; quantisation, rather than using</span>
+<span class="sd">        min/max of input</span>
+<span class="sd">      centers : {True, False}</span>
+<span class="sd">        Return vector of bin centers instead of bin bounds</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">bin_centers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">uniform</span> <span class="o">==</span> <span class="s">&#39;sampling&#39;</span><span class="p">:</span>
+        <span class="c">#bin_numel = np.round(input.size/m) - 1</span>
+        <span class="n">bin_numel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">size</span><span class="o">/</span><span class="n">m</span><span class="p">)</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="nb">input</span><span class="o">.</span><span class="n">size</span> <span class="o">-</span> <span class="p">(</span><span class="n">bin_numel</span><span class="o">*</span><span class="n">m</span><span class="p">)</span> 
+
+        <span class="n">stemp</span> <span class="o">=</span> <span class="nb">input</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">stemp</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="c"># original method</span>
+        <span class="c">#bin_bounds = stemp[bin_numel:-bin_numel+1:bin_numel]</span>
+        <span class="c"># more uniform method</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">bin_numel</span><span class="p">,</span> <span class="n">bin_numel</span><span class="o">*</span><span class="n">m</span><span class="p">,</span> <span class="n">bin_numel</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">)</span>
+        <span class="n">idx</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">r</span><span class="p">]</span> <span class="o">=</span> <span class="n">idx</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">r</span><span class="p">]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">r</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">)</span>
+        <span class="n">idx</span><span class="p">[</span><span class="n">r</span><span class="p">:]</span> <span class="o">=</span> <span class="n">idx</span><span class="p">[</span><span class="n">r</span><span class="p">:]</span> <span class="o">+</span> <span class="n">r</span>
+        <span class="n">bin_bounds</span> <span class="o">=</span> <span class="n">stemp</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">centers</span><span class="p">:</span>
+            <span class="c"># calculate center for each bin</span>
+            <span class="n">bin_centers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span>  <span class="p">(</span><span class="n">bin_bounds</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">stemp</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="mf">2.0</span>        
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">m</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                <span class="n">bin_centers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">bin_bounds</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="n">bin_bounds</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="mf">2.0</span>
+            <span class="n">bin_centers</span><span class="p">[</span><span class="n">m</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">stemp</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">bin_bounds</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="mf">2.0</span>
+    <span class="k">elif</span> <span class="n">uniform</span> <span class="o">==</span> <span class="s">&#39;bins&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">minmax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="nb">min</span><span class="p">,</span> <span class="nb">max</span> <span class="o">=</span> <span class="n">minmax</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">min</span><span class="p">,</span> <span class="nb">max</span> <span class="o">=</span> <span class="nb">input</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="nb">input</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+        <span class="n">drange</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">max</span><span class="p">)</span> <span class="o">-</span> <span class="nb">float</span><span class="p">(</span><span class="nb">min</span><span class="p">)</span>
+        <span class="n">bin_width</span> <span class="o">=</span> <span class="n">drange</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+        <span class="n">bin_bounds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">m</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">bin_bounds</span> <span class="o">*=</span> <span class="n">bin_width</span>
+        <span class="n">bin_bounds</span> <span class="o">+=</span> <span class="nb">min</span>
+        <span class="k">if</span> <span class="n">centers</span><span class="p">:</span>
+            <span class="n">bin_centers</span> <span class="o">=</span> <span class="n">r_</span><span class="p">[</span><span class="n">bin_bounds</span> <span class="o">-</span> <span class="p">(</span><span class="n">bin_width</span><span class="o">/</span><span class="mf">2.0</span><span class="p">),</span> <span class="n">bin_bounds</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="p">(</span><span class="n">bin_width</span><span class="o">/</span><span class="mf">2.0</span><span class="p">)]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="s">&quot;Unknown value of &#39;uniform&#39;&quot;</span>
+
+    <span class="n">q_value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">digitize</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">bin_bounds</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">centers</span><span class="p">:</span>
+        <span class="c"># bin centers</span>
+        <span class="k">return</span> <span class="n">q_value</span><span class="p">,</span> <span class="n">bin_bounds</span><span class="p">,</span> <span class="n">bin_centers</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">q_value</span><span class="p">,</span> <span class="n">bin_bounds</span>
+</div>
+<div class="viewcode-block" id="quantise_discrete"><a class="viewcode-back" href="../MI_utils.html#MI_utils.quantise_discrete">[docs]</a><span class="k">def</span> <span class="nf">quantise_discrete</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">m</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Re-bin an already discretised sequence (eg of integer counts)</span>
+
+<span class="sd">    Input should already be non-negative integers</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># astype forces a copy even if already int</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="nb">input</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">)</span><span class="o">==</span><span class="n">X</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="s">&quot;Expecting non-negative integer input&quot;</span>
+
+    <span class="k">if</span> <span class="nb">input</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">m</span><span class="p">:</span>
+        <span class="c"># nothing to do</span>
+        <span class="k">return</span> <span class="nb">input</span>
+
+    <span class="c"># rebinning algorithm</span>
+    <span class="c"># get bincounts now to determine smallest bins</span>
+    <span class="c"># merge smallest bin to smallest neighbouring bin</span>
+    <span class="c"># (maintain continuity) until we have the right number</span>
+    <span class="n">counts</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="n">X</span><span class="p">))</span>
+    <span class="n">Nbins</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">counts</span><span class="p">)</span>
+    <span class="n">labels</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">r_</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">Nbins</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">merge_bins</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Merge bin a into bin b&quot;&quot;&quot;</span>
+        <span class="n">counts</span><span class="p">[</span><span class="n">b</span><span class="p">]</span> <span class="o">=</span> <span class="n">counts</span><span class="p">[</span><span class="n">b</span><span class="p">]</span> <span class="o">+</span> <span class="n">counts</span><span class="p">[</span><span class="n">a</span><span class="p">]</span>
+        <span class="n">X</span><span class="p">[</span><span class="n">X</span><span class="o">==</span><span class="n">labels</span><span class="p">[</span><span class="n">a</span><span class="p">]]</span> <span class="o">=</span> <span class="n">labels</span><span class="p">[</span><span class="n">b</span><span class="p">]</span>
+        <span class="n">counts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+        <span class="n">labels</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+
+    <span class="k">while</span> <span class="n">Nbins</span> <span class="o">&gt;</span> <span class="n">m</span><span class="p">:</span>
+        <span class="n">cidx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">counts</span><span class="p">)</span>
+        <span class="c"># smallest one</span>
+        <span class="n">si</span> <span class="o">=</span> <span class="n">cidx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c"># if its at the edges can only merge one way</span>
+        <span class="k">if</span> <span class="n">si</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">merge_bins</span><span class="p">(</span><span class="n">si</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">si</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">counts</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">merge_bins</span><span class="p">(</span><span class="n">si</span><span class="p">,</span> <span class="n">si</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># merge to the smallest neighbour</span>
+            <span class="n">target</span> <span class="o">=</span> <span class="p">[</span><span class="n">si</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">si</span><span class="o">+</span><span class="mi">1</span><span class="p">][</span><span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">([</span><span class="n">counts</span><span class="p">[</span><span class="n">si</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">counts</span><span class="p">[</span><span class="n">si</span><span class="o">+</span><span class="mi">1</span><span class="p">]])]</span>
+            <span class="n">merge_bins</span><span class="p">(</span><span class="n">si</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+        <span class="n">Nbins</span> <span class="o">=</span> <span class="n">Nbins</span> <span class="o">-</span> <span class="mi">1</span>
+
+    <span class="c"># relabel</span>
+    <span class="n">newlabels</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">newlabels</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">labels</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
+            <span class="c"># only reassign if necessary</span>
+            <span class="n">X</span><span class="p">[</span><span class="n">X</span><span class="o">==</span><span class="n">labels</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">=</span> <span class="n">newlabels</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">X</span>
+</pre></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, SAP.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

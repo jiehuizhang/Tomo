@@ -1,0 +1,4 @@
+Sphinx command:
+
+build modules:   sphinx-apidoc.py -o C:\Tomosynthesis\Documentation\Code_doc\source C:\Tomosynthesis\Documentation\Code_doc\test_code
+build master:    sphinx-build.py -b html source build

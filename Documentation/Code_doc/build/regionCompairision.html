@@ -1,0 +1,234 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>5.2. regionCompairision module &mdash; Tomosynthesis Machine Learning 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Tomosynthesis Machine Learning 1.0 documentation" href="index.html" />
+    <link rel="up" title="5. Bilateral Asymetric Analysis" href="asymmetric_analysis.html" />
+    <link rel="next" title="6. Test Examples" href="test_examples.html" />
+    <link rel="prev" title="5.1.2. TPSpline module" href="TPSpline.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="test_examples.html" title="6. Test Examples"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="TPSpline.html" title="5.1.2. TPSpline module"
+             accesskey="P">previous</a> |</li>
+        <li><a href="Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="asymmetric_analysis.html" accesskey="U">5. Bilateral Asymetric Analysis</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-regionCompairision">
+<span id="regioncompairision-module"></span><h1>5.2. regionCompairision module<a class="headerlink" href="#module-regionCompairision" title="Permalink to this headline">¶</a></h1>
+<p>Compare regions in two sides images based on variety of metrics</p>
+<dl class="function">
+<dt id="regionCompairision.compHist">
+<tt class="descclassname">regionCompairision.</tt><tt class="descname">compHist</tt><big>(</big><em>hist1</em>, <em>hist2</em>, <em>method</em>, <em>formula</em><big>)</big><a class="reference internal" href="_modules/regionCompairision.html#compHist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#regionCompairision.compHist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compare two histograms with given method and formula.</p>
+<dl class="docutils">
+<dt>hist1 <span class="classifier-delimiter">:</span> <span class="classifier">1D array</span></dt>
+<dd>The first histogram</dd>
+<dt>hist2 <span class="classifier-delimiter">:</span> <span class="classifier">1D array</span></dt>
+<dd>The second histogram</dd>
+<dt>method <span class="classifier-delimiter">:</span> <span class="classifier">str(cv integer)</span></dt>
+<dd>Options for method (&#8216;cv_comp&#8217;, &#8216;scipy_comp&#8217;, &#8216;kl_div&#8217;)</dd>
+<dt>formula: str(cv integer)</dt>
+<dd>Options for formula.
+For method == &#8216;cv_comp&#8217; (cv.CV_COMP_CORREL, cv.CV_COMP_CHISQR, cv.CV_COMP_INTERSECT, cv.CV_COMP_BHATTACHARYYA)
+For method == &#8216;scipy_comp&#8217; (&#8220;Euclidean&#8221;, &#8220;Manhattan&#8221;, &#8220;Chebysev&#8221;)</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="regionCompairision.exHistgram">
+<tt class="descclassname">regionCompairision.</tt><tt class="descname">exHistgram</tt><big>(</big><em>imregion</em>, <em>lb=2000</em>, <em>up=8000</em>, <em>s_bin=100</em>, <em>normalize=True</em><big>)</big><a class="reference internal" href="_modules/regionCompairision.html#exHistgram"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#regionCompairision.exHistgram" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract histogram from a image region.</p>
+<dl class="docutils">
+<dt>imregion <span class="classifier-delimiter">:</span> <span class="classifier">numpy array (2D)</span></dt>
+<dd>The image region data</dd>
+<dt>lb <span class="classifier-delimiter">:</span> <span class="classifier">integer</span></dt>
+<dd>Lower bound of the histogram</dd>
+<dt>ub <span class="classifier-delimiter">:</span> <span class="classifier">integer</span></dt>
+<dd>Upper bound of the histogram</dd>
+<dt>s_bin:</dt>
+<dd>The bin size of the histogram</dd>
+<dt>normalize: bool</dt>
+<dd>If or not to normalize the histogram</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="regionCompairision.imageComp">
+<tt class="descclassname">regionCompairision.</tt><tt class="descname">imageComp</tt><big>(</big><em>im1</em>, <em>im2</em>, <em>params</em>, <em>region_s=200</em>, <em>olap_s=200</em><big>)</big><a class="reference internal" href="_modules/regionCompairision.html#imageComp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#regionCompairision.imageComp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main image comparision function</p>
+<dl class="docutils">
+<dt>im1 <span class="classifier-delimiter">:</span> <span class="classifier">2D array</span></dt>
+<dd>The image data of image 1</dd>
+<dt>im2 <span class="classifier-delimiter">:</span> <span class="classifier">2D array</span></dt>
+<dd>The image data of image 2</dd>
+<dt>params: tuple</dt>
+<dd>Options of method and formula for comparing</dd>
+<dt>region_s <span class="classifier-delimiter">:</span> <span class="classifier">integer</span></dt>
+<dd>Cropping region size</dd>
+<dt>olap_s: integer</dt>
+<dd>Overlapping size.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="regionCompairision.matdecomp">
+<tt class="descclassname">regionCompairision.</tt><tt class="descname">matdecomp</tt><big>(</big><em>imregion</em>, <em>method</em><big>)</big><a class="reference internal" href="_modules/regionCompairision.html#matdecomp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#regionCompairision.matdecomp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute matrix decomposition</p>
+<dl class="docutils">
+<dt>imregion <span class="classifier-delimiter">:</span> <span class="classifier">2D array</span></dt>
+<dd>The image region data</dd>
+<dt>method <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>Options for method (&#8216;eigen&#8217;, &#8216;NMF&#8217;)</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="regionCompairision.regionComp">
+<tt class="descclassname">regionCompairision.</tt><tt class="descname">regionComp</tt><big>(</big><em>imregion1</em>, <em>imregion2</em>, <em>dis_opt</em>, <em>method</em>, <em>formula</em><big>)</big><a class="reference internal" href="_modules/regionCompairision.html#regionComp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#regionCompairision.regionComp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main region comparision function</p>
+<dl class="docutils">
+<dt>imregion1 <span class="classifier-delimiter">:</span> <span class="classifier">2D array</span></dt>
+<dd>The image data of region 1</dd>
+<dt>imregion2 <span class="classifier-delimiter">:</span> <span class="classifier">2D array</span></dt>
+<dd>The image data of region 2</dd>
+<dt>dis_opt: str</dt>
+<dd>Options for comparing dimensionality (&#8216;1d&#8217;, &#8216;2d&#8217;, &#8216;decomp&#8217;)</dd>
+<dt>method <span class="classifier-delimiter">:</span> <span class="classifier">str (cv integer)</span></dt>
+<dd>Options for method</dd>
+<dt>formula: str (cv integer)</dt>
+<dd>Options for formula</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="regionCompairision.tempMatch">
+<tt class="descclassname">regionCompairision.</tt><tt class="descname">tempMatch</tt><big>(</big><em>imregion1</em>, <em>imregion2</em>, <em>method</em><big>)</big><a class="reference internal" href="_modules/regionCompairision.html#tempMatch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#regionCompairision.tempMatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compare two image regions with given method.</p>
+<dl class="docutils">
+<dt>imregion1 <span class="classifier-delimiter">:</span> <span class="classifier">2D array</span></dt>
+<dd>The image data of region 1</dd>
+<dt>imregion2 <span class="classifier-delimiter">:</span> <span class="classifier">2D array</span></dt>
+<dd>The image data of region 2</dd>
+<dt>method <span class="classifier-delimiter">:</span> <span class="classifier">cv integer</span></dt>
+<dd>Options for method (cv.CV_TM_SQDIFF, cv.CV_TM_SQDIFF_NORMED, cv.CV_TM_CCORR,
+cv.CV_TM_CCORR_NORMED, cv. CV_TM_CCOEFF, CV_TM_CCOEFF_NORMED)</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="regionCompairision.vectComp">
+<tt class="descclassname">regionCompairision.</tt><tt class="descname">vectComp</tt><big>(</big><em>vecMat1</em>, <em>vecMat2</em>, <em>numComp=2</em><big>)</big><a class="reference internal" href="_modules/regionCompairision.html#vectComp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#regionCompairision.vectComp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute distance between two vector matrices</p>
+<dl class="docutils">
+<dt>vecMat1 <span class="classifier-delimiter">:</span> <span class="classifier"></span></dt>
+<dd>The first vector matrix</dd>
+<dt>vecMat2 <span class="classifier-delimiter">:</span> <span class="classifier"></span></dt>
+<dd>The second vector matrix</dd>
+<dt>numComp: integer</dt>
+<dd>Number of components remainded</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="TPSpline.html"
+                        title="previous chapter">5.1.2. TPSpline module</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="test_examples.html"
+                        title="next chapter">6. Test Examples</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/regionCompairision.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="test_examples.html" title="6. Test Examples"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="TPSpline.html" title="5.1.2. TPSpline module"
+             >previous</a> |</li>
+        <li><a href="Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="asymmetric_analysis.html" >5. Bilateral Asymetric Analysis</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, SAP.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

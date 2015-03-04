@@ -1,0 +1,278 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3.2.2. morphsnakes module &mdash; Tomosynthesis Machine Learning 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Tomosynthesis Machine Learning 1.0 documentation" href="index.html" />
+    <link rel="up" title="3.2. Segmentation" href="segmentation.html" />
+    <link rel="next" title="3.3. Extract Features" href="features_extraction.html" />
+    <link rel="prev" title="3.2.1. activeContourSegmentation module" href="activeContourSegmentation.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="features_extraction.html" title="3.3. Extract Features"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="activeContourSegmentation.html" title="3.2.1. activeContourSegmentation module"
+             accesskey="P">previous</a> |</li>
+        <li><a href="Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="mass_detection.html" >3. Mass Detection</a> &raquo;</li>
+          <li><a href="segmentation.html" accesskey="U">3.2. Segmentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-morphsnakes">
+<span id="morphsnakes-module"></span><h1>3.2.2. morphsnakes module<a class="headerlink" href="#module-morphsnakes" title="Permalink to this headline">¶</a></h1>
+<p>This is a Python implementation of the algorithms introduced in the paper</p>
+<blockquote>
+<div>Márquez-Neila, P., Baumela, L., Álvarez, L., &#8220;A morphological approach
+to curvature-based evolution of curves and surfaces&#8221;. IEEE Transactions
+on Pattern Analysis and Machine Intelligence (PAMI), 2013.</div></blockquote>
+<dl class="function">
+<dt id="morphsnakes.IS">
+<tt class="descclassname">morphsnakes.</tt><tt class="descname">IS</tt><big>(</big><em>u</em><big>)</big><a class="reference internal" href="_modules/morphsnakes.html#IS"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#morphsnakes.IS" title="Permalink to this definition">¶</a></dt>
+<dd><p>IS operator.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="morphsnakes.ISoSI">
+<tt class="descclassname">morphsnakes.</tt><tt class="descname">ISoSI</tt><big>(</big><em>u</em><big>)</big><a class="headerlink" href="#morphsnakes.ISoSI" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="morphsnakes.MorphACWE">
+<em class="property">class </em><tt class="descclassname">morphsnakes.</tt><tt class="descname">MorphACWE</tt><big>(</big><em>data</em>, <em>smoothing=1</em>, <em>lambda1=1</em>, <em>lambda2=1</em><big>)</big><a class="reference internal" href="_modules/morphsnakes.html#MorphACWE"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#morphsnakes.MorphACWE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="http://docs.python.org/library/functions.html#object" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></a></p>
+<p>Morphological ACWE based on the Chan-Vese energy functional.</p>
+<dl class="attribute">
+<dt id="morphsnakes.MorphACWE.levelset">
+<tt class="descname">levelset</tt><a class="headerlink" href="#morphsnakes.MorphACWE.levelset" title="Permalink to this definition">¶</a></dt>
+<dd><p>The level set embedding function (u).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="morphsnakes.MorphACWE.run">
+<tt class="descname">run</tt><big>(</big><em>iterations</em><big>)</big><a class="reference internal" href="_modules/morphsnakes.html#MorphACWE.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#morphsnakes.MorphACWE.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run several iterations of the morphological Chan-Vese method.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="morphsnakes.MorphACWE.set_levelset">
+<tt class="descname">set_levelset</tt><big>(</big><em>u</em><big>)</big><a class="reference internal" href="_modules/morphsnakes.html#MorphACWE.set_levelset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#morphsnakes.MorphACWE.set_levelset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="morphsnakes.MorphACWE.step">
+<tt class="descname">step</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/morphsnakes.html#MorphACWE.step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#morphsnakes.MorphACWE.step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform a single step of the morphological Chan-Vese evolution.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="morphsnakes.MorphGAC">
+<em class="property">class </em><tt class="descclassname">morphsnakes.</tt><tt class="descname">MorphGAC</tt><big>(</big><em>data</em>, <em>smoothing=1</em>, <em>threshold=0</em>, <em>balloon=0</em><big>)</big><a class="reference internal" href="_modules/morphsnakes.html#MorphGAC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#morphsnakes.MorphGAC" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="http://docs.python.org/library/functions.html#object" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></a></p>
+<p>Morphological GAC based on the Geodesic Active Contours.</p>
+<dl class="attribute">
+<dt id="morphsnakes.MorphGAC.balloon">
+<tt class="descname">balloon</tt><a class="headerlink" href="#morphsnakes.MorphGAC.balloon" title="Permalink to this definition">¶</a></dt>
+<dd><p>The morphological balloon parameter (ν (nu, not v)).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="morphsnakes.MorphGAC.data">
+<tt class="descname">data</tt><a class="headerlink" href="#morphsnakes.MorphGAC.data" title="Permalink to this definition">¶</a></dt>
+<dd><p>The data that controls the snake evolution (the image or g(I)).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="morphsnakes.MorphGAC.levelset">
+<tt class="descname">levelset</tt><a class="headerlink" href="#morphsnakes.MorphGAC.levelset" title="Permalink to this definition">¶</a></dt>
+<dd><p>The level set embedding function (u).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="morphsnakes.MorphGAC.run">
+<tt class="descname">run</tt><big>(</big><em>iterations</em><big>)</big><a class="reference internal" href="_modules/morphsnakes.html#MorphGAC.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#morphsnakes.MorphGAC.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run several iterations of the morphological snakes method.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="morphsnakes.MorphGAC.set_balloon">
+<tt class="descname">set_balloon</tt><big>(</big><em>v</em><big>)</big><a class="reference internal" href="_modules/morphsnakes.html#MorphGAC.set_balloon"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#morphsnakes.MorphGAC.set_balloon" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="morphsnakes.MorphGAC.set_data">
+<tt class="descname">set_data</tt><big>(</big><em>data</em><big>)</big><a class="reference internal" href="_modules/morphsnakes.html#MorphGAC.set_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#morphsnakes.MorphGAC.set_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="morphsnakes.MorphGAC.set_levelset">
+<tt class="descname">set_levelset</tt><big>(</big><em>u</em><big>)</big><a class="reference internal" href="_modules/morphsnakes.html#MorphGAC.set_levelset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#morphsnakes.MorphGAC.set_levelset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="morphsnakes.MorphGAC.set_threshold">
+<tt class="descname">set_threshold</tt><big>(</big><em>theta</em><big>)</big><a class="reference internal" href="_modules/morphsnakes.html#MorphGAC.set_threshold"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#morphsnakes.MorphGAC.set_threshold" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="morphsnakes.MorphGAC.step">
+<tt class="descname">step</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/morphsnakes.html#MorphGAC.step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#morphsnakes.MorphGAC.step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform a single step of the morphological snake evolution.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="morphsnakes.MorphGAC.threshold">
+<tt class="descname">threshold</tt><a class="headerlink" href="#morphsnakes.MorphGAC.threshold" title="Permalink to this definition">¶</a></dt>
+<dd><p>The threshold value (θ).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="morphsnakes.SI">
+<tt class="descclassname">morphsnakes.</tt><tt class="descname">SI</tt><big>(</big><em>u</em><big>)</big><a class="reference internal" href="_modules/morphsnakes.html#SI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#morphsnakes.SI" title="Permalink to this definition">¶</a></dt>
+<dd><p>SI operator.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="morphsnakes.SIoIS">
+<tt class="descclassname">morphsnakes.</tt><tt class="descname">SIoIS</tt><big>(</big><em>u</em><big>)</big><a class="headerlink" href="#morphsnakes.SIoIS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="morphsnakes.evolve_visual">
+<tt class="descclassname">morphsnakes.</tt><tt class="descname">evolve_visual</tt><big>(</big><em>msnake</em>, <em>visulization=False</em>, <em>levelset=None</em>, <em>num_iters=20</em>, <em>background=None</em><big>)</big><a class="reference internal" href="_modules/morphsnakes.html#evolve_visual"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#morphsnakes.evolve_visual" title="Permalink to this definition">¶</a></dt>
+<dd><p>Visual evolution of a morphological snake.</p>
+<dl class="docutils">
+<dt>msnake <span class="classifier-delimiter">:</span> <span class="classifier">MorphGAC or MorphACWE instance</span></dt>
+<dd>The morphological snake solver.</dd>
+<dt>levelset <span class="classifier-delimiter">:</span> <span class="classifier">array-like, optional</span></dt>
+<dd>If given, the levelset of the solver is initialized to this. If not
+given, the evolution will use the levelset already set in msnake.</dd>
+<dt>num_iters <span class="classifier-delimiter">:</span> <span class="classifier">int, optional</span></dt>
+<dd>The number of iterations.</dd>
+<dt>background <span class="classifier-delimiter">:</span> <span class="classifier">array-like, optional</span></dt>
+<dd>If given, background will be shown behind the contours instead of
+msnake.data.</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="morphsnakes.fcycle">
+<em class="property">class </em><tt class="descclassname">morphsnakes.</tt><tt class="descname">fcycle</tt><big>(</big><em>iterable</em><big>)</big><a class="reference internal" href="_modules/morphsnakes.html#fcycle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#morphsnakes.fcycle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="http://docs.python.org/library/functions.html#object" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></a></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="morphsnakes.gborders">
+<tt class="descclassname">morphsnakes.</tt><tt class="descname">gborders</tt><big>(</big><em>img</em>, <em>alpha=1.0</em>, <em>sigma=1.0</em><big>)</big><a class="reference internal" href="_modules/morphsnakes.html#gborders"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#morphsnakes.gborders" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stopping criterion for image borders.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="morphsnakes.glines">
+<tt class="descclassname">morphsnakes.</tt><tt class="descname">glines</tt><big>(</big><em>img</em>, <em>sigma=1.0</em><big>)</big><a class="reference internal" href="_modules/morphsnakes.html#glines"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#morphsnakes.glines" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stopping criterion for image black lines.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="activeContourSegmentation.html"
+                        title="previous chapter">3.2.1. activeContourSegmentation module</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="features_extraction.html"
+                        title="next chapter">3.3. Extract Features</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/morphsnakes.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="features_extraction.html" title="3.3. Extract Features"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="activeContourSegmentation.html" title="3.2.1. activeContourSegmentation module"
+             >previous</a> |</li>
+        <li><a href="Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="mass_detection.html" >3. Mass Detection</a> &raquo;</li>
+          <li><a href="segmentation.html" >3.2. Segmentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, SAP.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

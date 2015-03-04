@@ -1,0 +1,240 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>1.4. TPatch module &mdash; Tomosynthesis Machine Learning 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Tomosynthesis Machine Learning 1.0 documentation" href="index.html" />
+    <link rel="up" title="1. Core Functions" href="core_functions.html" />
+    <link rel="next" title="1.5. TMicroCal module" href="TMicroCal.html" />
+    <link rel="prev" title="1.3. TImage module" href="TImage.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="TMicroCal.html" title="1.5. TMicroCal module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="TImage.html" title="1.3. TImage module"
+             accesskey="P">previous</a> |</li>
+        <li><a href="Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="core_functions.html" accesskey="U">1. Core Functions</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-TPatch">
+<span id="tpatch-module"></span><h1>1.4. TPatch module<a class="headerlink" href="#module-TPatch" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="TPatch.TLightPatch">
+<em class="property">class </em><tt class="descclassname">TPatch.</tt><tt class="descname">TLightPatch</tt><a class="reference internal" href="_modules/TPatch.html#TLightPatch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TPatch.TLightPatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Light class of TPatch includes only class variables</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="TPatch.TPatch">
+<em class="property">class </em><tt class="descclassname">TPatch.</tt><tt class="descname">TPatch</tt><a class="reference internal" href="_modules/TPatch.html#TPatch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TPatch.TPatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Image patch class. (A region of interest)</p>
+<dl class="docutils">
+<dt>pdata: 2D numpy array</dt>
+<dd>The patch data</dd>
+<dt>image_center: a tuple of two intergers</dt>
+<dd>The (x,y) coordinate in the oroginal image</dd>
+<dt>patch_center: a tuple of two intergers</dt>
+<dd>The (x,y) coordinate of the center of the patch</dd>
+<dt>data_size: a tuple of two intergers</dt>
+<dd>The shape of hte data array</dd>
+<dt>patch_size: integer</dt>
+<dd>The radius of the patch</dd>
+<dt>bagID: interger</dt>
+<dd>Used in the multi-instance learning classification.
+The ID of the training sample</dd>
+<dt>instanceID: interger</dt>
+<dd>Used in the multi-instance learning classification.
+The ID asigned by the classifier</dd>
+</dl>
+<dl class="method">
+<dt id="TPatch.TPatch.computeGradient">
+<tt class="descname">computeGradient</tt><big>(</big><em>threshold=1500</em><big>)</big><a class="reference internal" href="_modules/TPatch.html#TPatch.computeGradient"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TPatch.TPatch.computeGradient" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the gradient of the image patch</p>
+<dl class="docutils">
+<dt>threshold <span class="classifier-delimiter">:</span> <span class="classifier">integer</span></dt>
+<dd>Gradient magnitude below this value are set to be 0.</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="TPatch.TPatch.downSampling">
+<tt class="descname">downSampling</tt><big>(</big><em>rate=2</em><big>)</big><a class="reference internal" href="_modules/TPatch.html#TPatch.downSampling"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TPatch.TPatch.downSampling" title="Permalink to this definition">¶</a></dt>
+<dd><p>Down sampling the image patch by given sample rate</p>
+<dl class="docutils">
+<dt>rate <span class="classifier-delimiter">:</span> <span class="classifier">integer</span></dt>
+<dd>The sample rate.</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="TPatch.TPatch.getGradfeats">
+<tt class="descname">getGradfeats</tt><big>(</big><em>gr_Rnum</em>, <em>gr_Snum</em><big>)</big><a class="reference internal" href="_modules/TPatch.html#TPatch.getGradfeats"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TPatch.TPatch.getGradfeats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute gradient features of the image patch</p>
+<dl class="docutils">
+<dt>gr_Rnum <span class="classifier-delimiter">:</span> <span class="classifier">integer</span></dt>
+<dd>The number of rings to be divided into.</dd>
+<dt>gr_Snum <span class="classifier-delimiter">:</span> <span class="classifier">integer</span></dt>
+<dd>The number of sectors to be divided into.</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="TPatch.TPatch.getIntenfeats">
+<tt class="descname">getIntenfeats</tt><big>(</big><em>int_Rnum</em>, <em>int_Snum</em><big>)</big><a class="reference internal" href="_modules/TPatch.html#TPatch.getIntenfeats"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TPatch.TPatch.getIntenfeats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute intensity features of the image patch</p>
+<dl class="docutils">
+<dt>int_Rnum <span class="classifier-delimiter">:</span> <span class="classifier">integer</span></dt>
+<dd>The number of rings to be divided into.</dd>
+<dt>int_Rnum <span class="classifier-delimiter">:</span> <span class="classifier">integer</span></dt>
+<dd>The number of sectors to be divided into.</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="TPatch.TPatch.getRings">
+<tt class="descname">getRings</tt><big>(</big><em>data</em>, <em>numrings</em>, <em>dr_ini</em>, <em>r_ini=0</em>, <em>delta_dr=2</em><big>)</big><a class="reference internal" href="_modules/TPatch.html#TPatch.getRings"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TPatch.TPatch.getRings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Devide the image patch into a number of rings</p>
+<dl class="docutils">
+<dt>data <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
+<dd>The patch data.</dd>
+<dt>numrings <span class="classifier-delimiter">:</span> <span class="classifier">integer</span></dt>
+<dd>The number of rings desired</dd>
+<dt>dr_ini <span class="classifier-delimiter">:</span> <span class="classifier">integer</span></dt>
+<dd>The initial delt value for radius increasment</dd>
+<dt>r_ini: integer</dt>
+<dd>The initial radious value</dd>
+<dt>delta_dr: integer</dt>
+<dd>The increase step of delt value</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="TPatch.TPatch.getSectors">
+<tt class="descname">getSectors</tt><big>(</big><em>data</em>, <em>numsects</em><big>)</big><a class="reference internal" href="_modules/TPatch.html#TPatch.getSectors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TPatch.TPatch.getSectors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Devide the image patch into a number of angular sectors</p>
+<dl class="docutils">
+<dt>data <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
+<dd>The patch data.</dd>
+<dt>numrings <span class="classifier-delimiter">:</span> <span class="classifier">integer</span></dt>
+<dd>The number of sectors desired</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="TPatch.TPatch.getSegmentFeats">
+<tt class="descname">getSegmentFeats</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/TPatch.html#TPatch.getSegmentFeats"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TPatch.TPatch.getSegmentFeats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute gradient features of the image patch</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="TPatch.TPatch.initialize">
+<tt class="descname">initialize</tt><big>(</big><em>imdata</em><big>)</big><a class="reference internal" href="_modules/TPatch.html#TPatch.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TPatch.TPatch.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialization with imdata</p>
+<dl class="docutils">
+<dt>imdata <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
+<dd>Initilial data array.</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="TImage.html"
+                        title="previous chapter">1.3. TImage module</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="TMicroCal.html"
+                        title="next chapter">1.5. TMicroCal module</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/TPatch.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="TMicroCal.html" title="1.5. TMicroCal module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="TImage.html" title="1.3. TImage module"
+             >previous</a> |</li>
+        <li><a href="Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="core_functions.html" >1. Core Functions</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, SAP.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

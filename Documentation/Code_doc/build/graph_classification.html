@@ -1,0 +1,274 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3.4.2. graph_classification module &mdash; Tomosynthesis Machine Learning 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Tomosynthesis Machine Learning 1.0 documentation" href="index.html" />
+    <link rel="up" title="3.4. Mass Classification" href="Mclassification.html" />
+    <link rel="next" title="3.4.3. midt module" href="midt.html" />
+    <link rel="prev" title="3.4.1. classification module" href="classification.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="midt.html" title="3.4.3. midt module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="classification.html" title="3.4.1. classification module"
+             accesskey="P">previous</a> |</li>
+        <li><a href="Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="mass_detection.html" >3. Mass Detection</a> &raquo;</li>
+          <li><a href="Mclassification.html" accesskey="U">3.4. Mass Classification</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-graph_classification">
+<span id="graph-classification-module"></span><h1>3.4.2. graph_classification module<a class="headerlink" href="#module-graph_classification" title="Permalink to this headline">¶</a></h1>
+<p>Binaray classification using graphcut</p>
+<dl class="function">
+<dt id="graph_classification.buildGraph">
+<tt class="descclassname">graph_classification.</tt><tt class="descname">buildGraph</tt><big>(</big><em>numSource</em>, <em>numSink</em>, <em>numSuspicious</em>, <em>weight</em><big>)</big><a class="reference internal" href="_modules/graph_classification.html#buildGraph"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_classification.buildGraph" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build a graph with all positive data points as source, and all negative
+data points as sink.</p>
+<dl class="docutils">
+<dt>numSource: integer</dt>
+<dd>The number of positive data points</dd>
+<dt>numSink: integer</dt>
+<dd>The number of negative data points</dd>
+<dt>numSuspicious: integer</dt>
+<dd>The number of suspicious data points</dd>
+<dt>weight: numpy array (2D)</dt>
+<dd>The weight matrix</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="graph_classification.classify">
+<tt class="descclassname">graph_classification.</tt><tt class="descname">classify</tt><big>(</big><em>gr</em>, <em>numSource</em>, <em>numSink</em><big>)</big><a class="reference internal" href="_modules/graph_classification.html#classify"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_classification.classify" title="Permalink to this definition">¶</a></dt>
+<dd><p>Classify using the built graph by the max_flow algorithm</p>
+<dl class="docutils">
+<dt>gr: </dt>
+<dd>The graph model</dd>
+<dt>numSource: integer</dt>
+<dd>The number of positive data points</dd>
+<dt>numSink: integer</dt>
+<dd>The number of negative data points</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="graph_classification.computeDis">
+<tt class="descclassname">graph_classification.</tt><tt class="descname">computeDis</tt><big>(</big><em>feat1</em>, <em>feat2</em>, <em>opt='Euc'</em><big>)</big><a class="reference internal" href="_modules/graph_classification.html#computeDis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_classification.computeDis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute distance of two vectors.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="graph_classification.computeFeatureCorrelation">
+<tt class="descclassname">graph_classification.</tt><tt class="descname">computeFeatureCorrelation</tt><big>(</big><em>featSuspicious</em>, <em>featSource</em>, <em>featSink</em><big>)</big><a class="reference internal" href="_modules/graph_classification.html#computeFeatureCorrelation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_classification.computeFeatureCorrelation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computer extracted feature correlation</p>
+<dl class="docutils">
+<dt>featSuspicious:</dt>
+<dd>Testing feature table</dd>
+<dt>featSource:</dt>
+<dd>Training positive feature table</dd>
+<dt>featSink:</dt>
+<dd>Training negative feature table</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="graph_classification.computeIntensityCorrelation">
+<tt class="descclassname">graph_classification.</tt><tt class="descname">computeIntensityCorrelation</tt><big>(</big><em>intenSuspicious</em>, <em>intenSource</em>, <em>intenSink</em>, <em>cenSuspicious</em>, <em>cenSource</em>, <em>cenSink</em><big>)</big><a class="reference internal" href="_modules/graph_classification.html#computeIntensityCorrelation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_classification.computeIntensityCorrelation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computer intensity correlation of two ROIs</p>
+<dl class="docutils">
+<dt>intenSuspicious: list of numpy array(2D)</dt>
+<dd>Testing ROI intensity lists</dd>
+<dt>intenSource:</dt>
+<dd>Training positive ROI intensity lists</dd>
+<dt>intenSink:</dt>
+<dd>Training negative ROI intensity lists</dd>
+<dt>cenSuspicious: list of tuples with coordination</dt>
+<dd>The center coordinations of all suspicious data point</dd>
+<dt>cenSource: list of tuples with coordination</dt>
+<dd>The center coordinations of all positive data point</dd>
+<dt>cenSink: list of tuples with coordination</dt>
+<dd>The center coordinations of all negative data point</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="graph_classification.computeSpaDis">
+<tt class="descclassname">graph_classification.</tt><tt class="descname">computeSpaDis</tt><big>(</big><em>coord_1</em>, <em>coord_2</em><big>)</big><a class="reference internal" href="_modules/graph_classification.html#computeSpaDis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_classification.computeSpaDis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computer spacial correlation of two ROIs</p>
+<dl class="docutils">
+<dt>coord_1:</dt>
+<dd>The coordination of the first ROI</dd>
+<dt>coord_2:</dt>
+<dd>The coordination of the second ROI</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="graph_classification.computeSpatialCorrelation">
+<tt class="descclassname">graph_classification.</tt><tt class="descname">computeSpatialCorrelation</tt><big>(</big><em>coordSuspicious</em>, <em>numSor</em>, <em>numSin</em><big>)</big><a class="reference internal" href="_modules/graph_classification.html#computeSpatialCorrelation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_classification.computeSpatialCorrelation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computer spacial correlation of ROIs</p>
+<dl class="docutils">
+<dt>coordSuspicious: list of tuples</dt>
+<dd>The Coordination of all testing RIO</dd>
+<dt>numSor:</dt>
+<dd>The number of source data point</dd>
+<dt>numSin:</dt>
+<dd>The number of sink data point</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="graph_classification.computeWeight">
+<tt class="descclassname">graph_classification.</tt><tt class="descname">computeWeight</tt><big>(</big><em>sliceList</em>, <em>sourceSams</em>, <em>sinkSams</em>, <em>alpha</em>, <em>beta=0.1</em><big>)</big><a class="reference internal" href="_modules/graph_classification.html#computeWeight"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_classification.computeWeight" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computer the weigh between ROIs using intensity, coordination and features.</p>
+<dl class="docutils">
+<dt>sliceList:</dt>
+<dd>List of suspicious data</dd>
+<dt>sourceSams:</dt>
+<dd>List positive data</dd>
+<dt>sinkSams:</dt>
+<dd>List of negative data</dd>
+<dt>alpha:</dt>
+<dd>Weight coefficient for feature correlation</dd>
+<dt>beta:</dt>
+<dd>Weight coefficient for spatial correlation</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="graph_classification.getPdf">
+<tt class="descclassname">graph_classification.</tt><tt class="descname">getPdf</tt><big>(</big><em>data</em>, <em>center</em>, <em>numR=10</em>, <em>eq=False</em><big>)</big><a class="reference internal" href="_modules/graph_classification.html#getPdf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_classification.getPdf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the pdf functions of each rings from the ROI</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="graph_classification.mainClassify">
+<tt class="descclassname">graph_classification.</tt><tt class="descname">mainClassify</tt><big>(</big><em>sliceList</em>, <em>sourceSams</em>, <em>sinkSams</em>, <em>alpha=1</em>, <em>beta=0.2</em><big>)</big><a class="reference internal" href="_modules/graph_classification.html#mainClassify"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_classification.mainClassify" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main function for classification using graph cut.</p>
+<dl class="docutils">
+<dt>sliceList:</dt>
+<dd>List of suspicious data</dd>
+<dt>sourceSams:</dt>
+<dd>List positive data</dd>
+<dt>sinkSams:</dt>
+<dd>List of negative data</dd>
+<dt>alpha:</dt>
+<dd>Weight coefficient for feature correlation</dd>
+<dt>beta:</dt>
+<dd>Weight coefficient for spatial correlation</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="graph_classification.normalize">
+<tt class="descclassname">graph_classification.</tt><tt class="descname">normalize</tt><big>(</big><em>comb</em><big>)</big><a class="reference internal" href="_modules/graph_classification.html#normalize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_classification.normalize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Feature normalization</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="graph_classification.padding">
+<tt class="descclassname">graph_classification.</tt><tt class="descname">padding</tt><big>(</big><em>data1</em>, <em>data2</em><big>)</big><a class="reference internal" href="_modules/graph_classification.html#padding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_classification.padding" title="Permalink to this definition">¶</a></dt>
+<dd><p>Padding two images to the larger size</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="classification.html"
+                        title="previous chapter">3.4.1. classification module</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="midt.html"
+                        title="next chapter">3.4.3. midt module</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/graph_classification.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="midt.html" title="3.4.3. midt module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="classification.html" title="3.4.1. classification module"
+             >previous</a> |</li>
+        <li><a href="Tomo.html">Tomosynthesis Machine Learning 1.0 documentation</a> &raquo;</li>
+          <li><a href="mass_detection.html" >3. Mass Detection</a> &raquo;</li>
+          <li><a href="Mclassification.html" >3.4. Mass Classification</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, SAP.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>
